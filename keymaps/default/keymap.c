@@ -18,6 +18,7 @@
 #define _MT_QWERTY   8
 #define _VIM_WB      9
 #define _VIM_EGE     10
+#define _MOUSE       11
 
 #define LMTL MT(MOD_LCTL, KC_LEFT)
 #define LMTR MT(MOD_LGUI, KC_RIGHT)
@@ -28,17 +29,18 @@
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
-    [_QWERTY     ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)  },
-    [_SYM        ] =   { ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN), ENCODER_CCW_CW(KC_VOLD, KC_VOLU)  },
-    [_NAV        ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT),           ENCODER_CCW_CW(KC_DEL, KC_BSPC)  },
-    [_NUM        ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(QK_REP, QK_REP)  },
-    [_WASD       ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)  },
-    [_DOUBLE     ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)  },
-    [_SC_TAB     ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)  },
-    [_REP_8      ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)  },
-    [_MT_QWERTY  ] =   { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)  },
-    [_VIM_WB     ] =   { ENCODER_CCW_CW(KC_B, KC_W), ENCODER_CCW_CW(KC_LCBR, KC_RCBR)  },
-    [_VIM_EGE     ] =   { ENCODER_CCW_CW(KC_B, KC_E), ENCODER_CCW_CW(KC_DOWN, KC_UP)  },
+     [_QWERTY     ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
+     [_SYM        ] =  { ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN), ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
+     [_NAV        ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT),           ENCODER_CCW_CW(KC_BSPC, KC_DEL) },
+     [_NUM        ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(QK_REP, QK_REP)            },
+     [_WASD       ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
+     [_DOUBLE     ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
+     [_SC_TAB     ] =  { ENCODER_CCW_CW(RSFT(KC_TAB), KC_TAB), ENCODER_CCW_CW(RSFT(KC_TAB), KC_TAB)   },
+     [_REP_8      ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
+     [_MT_QWERTY  ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
+     [_VIM_WB     ] =  { ENCODER_CCW_CW(KC_B, KC_W), ENCODER_CCW_CW(KC_RCBR, KC_LCBR)                 },
+    [_VIM_EGE     ] =  { ENCODER_CCW_CW(KC_B, KC_E), ENCODER_CCW_CW(KC_DOWN, KC_UP)                  },
+      [_MOUSE     ] =  { ENCODER_CCW_CW(MS_LEFT, MS_RGHT), ENCODER_CCW_CW(MS_DOWN, MS_UP)                    },
     //                  Encoder 1                                     Encoder 2
 };
 #endif
@@ -46,11 +48,11 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_QWERTY] = LAYOUT_split_70(
-                               KC_ESC, KC_2, KC_3,    KC_4,    KC_5,                                                                 KC_6,     KC_7,     KC_8,     KC_9,     KC_DEL,
-            KC_HOME, KC_GRAVE, KC_1,   VLTW, VLTE,    KC_R,    KC_T,                                                                 KC_Y,     KC_U,     KC_I,     KC_O,     KC_0,      KC_MINS,   KC_EQL,
-            KC_END,  KC_TAB,   KC_Q,   KC_S, KC_D,    KC_F,    KC_G,                                                                 KC_H,     KC_J,     KC_K,     KC_L,     KC_P,      KC_LBRC,   KC_RBRC,
-            KC_LCTL, KC_CAPS,  KC_A,   KC_X, KC_C,    KC_V,    KC_B, LT(_NUM, KC_SPC),                                    KC_ENTER,  KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SCLN,   KC_QUOT,   KC_BSLS,
-                     KC_LSFT,  KC_Z,   LMTL, LMTR, KC_LCTL, KC_LGUI, KC_LALT,   LT(_NAV, KC_BSPC),   LT(_SYM, KC_ESC), KC_RSFT,   KC_RCTL,  KC_RCTL,  RMTD,  RMTU,  KC_SLSH,  KC_RSFT
+                               KC_ESC, KC_2, KC_3, KC_4,             KC_5,                                                                 KC_6, KC_7,       KC_8,     KC_9,    KC_DEL,
+            KC_HOME, KC_GRAVE, KC_1,   VLTW, VLTE, KC_R,             KC_T,                                                                 KC_Y, KC_U,       KC_I,     KC_O,    KC_0,    KC_MINS,   KC_EQL,
+            KC_END,  KC_TAB,   KC_Q,   KC_S, KC_D, KC_F,             KC_G,                                                                 KC_H, KC_J,       KC_K,     KC_L,    KC_P,    KC_LBRC,   KC_RBRC,
+            KC_LCTL, KC_CAPS,  KC_A,   KC_X, KC_C, LT(_MOUSE, KC_V), KC_B, LT(_NUM, KC_SPC),                             KC_ENTER,  KC_N,  KC_M, KC_COMM,    KC_DOT,   KC_SCLN, KC_QUOT, KC_BSLS,
+                     KC_LSFT,  KC_Z,   LMTL, LMTR, KC_LCTL,          KC_LGUI, KC_LALT,   LT(_NAV, KC_BSPC),   LT(_SYM, KC_ESC),  KC_RSFT,  KC_RCTL, KC_RCTL, RMTD,     RMTU,    KC_SLSH, KC_RSFT
 
     ),
     [_SYM] = LAYOUT_split_70(
@@ -110,8 +112,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_MT_QWERTY] = LAYOUT_split_70(
                                KC_ESC,             KC_2,             KC_3,    KC_4,    KC_5,                                                                 KC_6,     KC_7,     KC_8,     KC_9,     KC_DEL,
             KC_HOME, KC_GRAVE, KC_1,               VLTW,             VLTE,    KC_R,    KC_T,                                                                 KC_Y,     KC_U,     KC_I,     KC_O,     KC_0,      KC_MINS,   KC_EQL,
-            KC_END,  KC_TAB,   KC_Q, MT(MOD_LSFT, KC_S), MT(MOD_LSFT, KC_D), MT(MOD_LSFT, KC_F),    KC_G,                                KC_H,     MT(MOD_LSFT, KC_J),     MT(MOD_LSFT, KC_K),     MT(MOD_LSFT, KC_L),     KC_P,      KC_LBRC,   KC_RBRC,
-            KC_LCTL, KC_CAPS,  MT(MOD_LGUI, KC_A), KC_X,             KC_C,    KC_V,    KC_B, LT(_NUM, KC_SPC),                                    KC_ENTER,  KC_N,     KC_M,     MT(MOD_LSFT, KC_COMM),  KC_DOT,   KC_SCLN,   KC_QUOT,   KC_BSLS,
+            KC_END,  KC_TAB,   KC_Q, MT(MOD_LALT, KC_S), MT(MOD_LCTL, KC_D), MT(MOD_LSFT, KC_F),    KC_G,                                KC_H,     MT(MOD_RSFT, KC_J),     MT(MOD_RCTL, KC_K),     MT(MOD_RALT, KC_L),   KC_P,     KC_LBRC,   KC_RBRC,
+            KC_LCTL, KC_CAPS,  MT(MOD_LGUI, KC_A), KC_X,             KC_C,    KC_V,    KC_B, LT(_NUM, KC_SPC),                                    KC_ENTER,  KC_N,     KC_M,     MT(MOD_RGUI, KC_COMM),  KC_DOT,   KC_SCLN,   KC_QUOT,   KC_BSLS,
                      KC_LSFT,  KC_Z,               LMTL,             LMTR, KC_LCTL, KC_LGUI, KC_LALT,   LT(_NAV, KC_BSPC),   LT(_SYM, KC_ESC), KC_RSFT,   KC_RCTL,  KC_RCTL,  RMTD,  RMTU,  KC_SLSH,  KC_RSFT
 
     ),
@@ -131,6 +133,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
             KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,                                     KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
             KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,                   KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
                      KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
+
+    ),
+    [_MOUSE] = LAYOUT_split_70(
+
+                              KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,                                     KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+            KC_TRNS, KC_TRNS, KC_TRNS, MS_ACL1, MS_ACL2, KC_TRNS, KC_TRNS,                                     KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+            KC_TRNS, KC_TRNS, MS_ACL0, KC_LALT, KC_LCTL, KC_LSFT, KC_TRNS,                                     MS_LEFT, MS_DOWN, MS_UP,   MS_RGHT, KC_TRNS, KC_TRNS, KC_TRNS,
+            KC_TRNS, KC_TRNS, KC_LGUI, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,                   KC_TRNS, KC_TRNS, MS_BTN1, MS_BTN2, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+                     KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, MS_BTN1, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, MS_BTN2, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
 
     ),
 };

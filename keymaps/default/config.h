@@ -2,8 +2,9 @@
 #pragma once
 
 // default layer count
-#define DYNAMIC_KEYMAP_LAYER_COUNT 11
+#define DYNAMIC_KEYMAP_LAYER_COUNT 12
 
 #define ENCODER_RESOLUTION 4
 #define ENCODER_RESOLUTION_RIGHT 4
+#define MOUSEKEY_INITIAL_SPEED 2000
 
