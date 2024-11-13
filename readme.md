@@ -28,6 +28,6 @@ Enter the bootloader in 3 ways:
 
 
 ## TODO
+- [X] Mouse emulation
 - [ ] Macro
 - [ ] Repeat 8 times layer
-- [ ] Mouse emulation
