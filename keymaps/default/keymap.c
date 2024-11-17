@@ -76,7 +76,7 @@
 // #define VLTW LT(_VIM_WB, KC_W)
 // #define VLTE LT(_VIM_EGE, KC_E)
 
-#define CUSTOM_TAP_LAYER_TIMEOUT 100000
+#define CUSTOM_TAP_LAYER_TIMEOUT 10000
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
@@ -108,7 +108,7 @@ bool is_8_held = false;
 bool is_w_held = false;
 bool is_e_held = false;
 bool is_tab_held = false;
-bool is_r_held = false;
+bool is_u_held = false;
 bool is_y_held = false;
 bool is_z_held = false;
 
@@ -207,7 +207,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
     ACTIVATE_LAYER_KEY(is_w_held, is_vim_wb_active, is_vim_wb_timer);
     ACTIVATE_LAYER_KEY(is_e_held, is_vim_ege_active, is_vim_ege_timer);
     ACTIVATE_LAYER_KEY(is_tab_held, is_sc_tab_active, is_sc_tab_timer);
-    ACTIVATE_LAYER_KEY(is_r_held, is_strange_active, is_strange_timer);
+    ACTIVATE_LAYER_KEY(is_u_held, is_strange_active, is_strange_timer);
     ACTIVATE_LAYER_KEY(is_y_held, is_redo_y_active, is_redo_y_timer);
     ACTIVATE_LAYER_KEY(is_z_held, is_undo_z_active, is_undo_z_timer);
 
@@ -327,7 +327,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
-                        tap_8_times_or_once(KC_DEL);
+                        tap_8_times_or_once(KC_BSPC);
                         break;
                     case _NAV:
                         tap_8_times_or_once(KC_MS_WH_DOWN);
@@ -370,10 +370,10 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
             } else{
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
-                        tap_8_times_or_once(KC_BSPC);
+                        tap_8_times_or_once(KC_DEL);
                         break;
                     case _NAV:
-                        tap_8_times_or_once(KC_VOLD);
+                        tap_8_times_or_once(KC_MS_WH_UP);
                         break;
                     case _MOUSE:
                         tap_code(MS_UP);
@@ -400,7 +400,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       PROCESS_SCROLL_LAYER(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer);
       PROCESS_SCROLL_LAYER(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer);
       PROCESS_SCROLL_LAYER(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer);
-      PROCESS_SCROLL_LAYER(KC_R, is_r_held, is_strange_active, is_strange_timer);
+      PROCESS_SCROLL_LAYER(KC_U, is_u_held, is_strange_active, is_strange_timer);
       PROCESS_SCROLL_LAYER(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer);
       PROCESS_SCROLL_LAYER(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer);
 
@@ -409,7 +409,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       CHECK_AND_TAP(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer);
       CHECK_AND_TAP(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer);
       CHECK_AND_TAP(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer);
-      CHECK_AND_TAP(KC_R, is_r_held, is_strange_active, is_strange_timer);
+      CHECK_AND_TAP(KC_U, is_u_held, is_strange_active, is_strange_timer);
       CHECK_AND_TAP(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer);
       CHECK_AND_TAP(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer);
       return true; // Process all other keycodes normally
@@ -417,15 +417,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 
-void matrix_scan_user(void){
-    TRY_TO_ACTIVATE_LAYER_KEY(is_8_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_w_held, is_vim_wb_timer, is_vim_wb_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_e_held, is_vim_ege_timer, is_vim_ege_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_tab_held, is_sc_tab_timer, is_sc_tab_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_r_held, is_strange_timer, is_strange_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_y_held, is_redo_y_timer, is_redo_y_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_z_held, is_undo_z_timer, is_undo_z_active, CUSTOM_TAP_LAYER_TIMEOUT);
-
-}
+// void matrix_scan_user(void){
+//     TRY_TO_ACTIVATE_LAYER_KEY(is_8_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
+//     TRY_TO_ACTIVATE_LAYER_KEY(is_w_held, is_vim_wb_timer, is_vim_wb_active, CUSTOM_TAP_LAYER_TIMEOUT);
+//     TRY_TO_ACTIVATE_LAYER_KEY(is_e_held, is_vim_ege_timer, is_vim_ege_active, CUSTOM_TAP_LAYER_TIMEOUT);
+//     TRY_TO_ACTIVATE_LAYER_KEY(is_tab_held, is_sc_tab_timer, is_sc_tab_active, CUSTOM_TAP_LAYER_TIMEOUT);
+//     TRY_TO_ACTIVATE_LAYER_KEY(is_u_held, is_strange_timer, is_strange_active, CUSTOM_TAP_LAYER_TIMEOUT);
+//     TRY_TO_ACTIVATE_LAYER_KEY(is_y_held, is_redo_y_timer, is_redo_y_active, CUSTOM_TAP_LAYER_TIMEOUT);
+//     TRY_TO_ACTIVATE_LAYER_KEY(is_z_held, is_undo_z_timer, is_undo_z_active, CUSTOM_TAP_LAYER_TIMEOUT);
+// }
 
 
