@@ -302,7 +302,9 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
     } else if (index == 1) { /* Second encoder */
         if (!clockwise) {
             if(is_strange_active){
-                tap_8_times_or_once(KC_U);
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_R);
+                unregister_code(KC_LCTL);
             }else if (is_vim_wb_active) {
                 register_code(KC_LSFT);
                 tap_8_times_or_once(KC_RBRC);
@@ -337,6 +339,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                         break;
                     case _NUM:
                         tap_code(get_alt_repeat_key_keycode());
+                        break;
                     default:
                         tap_8_times_or_once(KC_DOWN);
                         break;
@@ -346,9 +349,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
         } else {
             if(is_strange_active){
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_R);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(KC_U);
             }else if (is_vim_wb_active) {
                 register_code(KC_LSFT);
                 tap_8_times_or_once(KC_LBRC);
@@ -380,6 +381,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                         break;
                     case _NUM:
                         tap_code(get_last_keycode());
+                        break;
                     default:
                         tap_8_times_or_once(KC_UP);
                         break;
