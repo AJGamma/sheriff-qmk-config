@@ -48,13 +48,9 @@ Currently there are 2 versions of keymaps, each version uses a different way to 
 | Backspace | Backspace | Delete | Backspace | Delete |  |
 | Esc | Volume-down | Volume-up | Mouse wheel down | Mouse wheel up | Sym layer |
 | Space | Left | Right | Repeat last key | Repeat last key's alternative | Nav layer |
-| V | Mouse left | Mouse right | Mouse down | Mouse up | Mouse layer |
 | W | b | w | } | { |  |
 | E | ge | e | Down | Up |  |
-| U | u | C-r | C-r | u |  |
-| Y | C-z | C-y | C-y | C-z |  |
-| Z | C-z | S-C-z | S-C-z | C-z |  |
-| 8 | Next activated behavior 8 times | Next activated behavior 8 times | Next activated behavior 8 times | Next activated behavior 8 times |  |
+| 8 | Left * 8 | Right * 8 | Down * 8 | Up * 8 |  |
 
 
 
