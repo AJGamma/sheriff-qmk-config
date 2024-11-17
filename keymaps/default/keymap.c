@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "action.h"
+#include "action_layer.h"
 #include "keycodes.h"
 #include "keymap_us.h"
 #include "matrix.h"
 #include "modifiers.h"
 #include "quantum_keycodes.h"
+#include "quantum_keycodes_legacy.h"
+#include "repeat_key.h"
 #include "timer.h"
 #include QMK_KEYBOARD_H
 
@@ -23,7 +26,11 @@
           is_held = true; \
           timer = 0; \
       } else { \
+          if (is_held){\
+              tap_code(key);\
+          }\
           is_held = false; \
+          is_active = false; \
           timer = 0; \
       } \
       return false; // Skip all further processing of this key
@@ -38,6 +45,7 @@
     if (is_held) { \
         if(timer_elapsed(timer) > timeout) { \
             is_active = true; \
+            is_held = false; \
         } \
     }
 
@@ -45,6 +53,7 @@
 #define ACTIVATE_LAYER_KEY(is_held, is_active, timer) \
     if (is_held) { \
         is_active = true; \
+        is_held = false; \
         timer = 0; \
     }
 
@@ -67,7 +76,7 @@
 // #define VLTW LT(_VIM_WB, KC_W)
 // #define VLTE LT(_VIM_EGE, KC_E)
 
-#define CUSTOM_TAP_LAYER_TIMEOUT 1000
+#define CUSTOM_TAP_LAYER_TIMEOUT 100000
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
@@ -208,10 +217,8 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
         if (!clockwise) {
             if(is_strange_active){
                 tap_8_times_or_once(KC_U);
-                return false;
             }else if (is_vim_wb_active) {
                 tap_8_times_or_once(KC_B);
-                return false;
             } else if (is_vim_ege_active) {
                 if (is_rep_8_active){
                     tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E);
@@ -220,43 +227,75 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                 else{
                     tap_code(KC_G);tap_code(KC_E);
                 }
-                return false;
             } else if (is_sc_tab_active) {
-                tap_8_times_or_once(S(KC_TAB));
-                return false;
+                register_code(KC_LSFT);
+                tap_8_times_or_once(KC_TAB);
+                unregister_code(KC_LSFT);
             } else if (is_redo_y_active) {
-                tap_8_times_or_once(C(KC_Z));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_Z);
+                unregister_code(KC_LCTL);
             } else if (is_undo_z_active) {
-                tap_8_times_or_once(C(KC_Z));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_Z);
+                unregister_code(KC_LCTL);
             }
             else{
-                return true;
+                switch (get_highest_layer(layer_state)) {
+                    case _SYM:
+                        tap_8_times_or_once(KC_BSPC);
+                        break;
+                    case _NAV:
+                        tap_8_times_or_once(KC_VOLD);
+                        break;
+                    case _MOUSE:
+                        tap_code(MS_LEFT);
+                        break;
+                    default:
+                        tap_8_times_or_once(KC_LEFT);
+                        break;
+
+                }
             }
 
         } else {
             if(is_strange_active){
-                tap_8_times_or_once(C(KC_R));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_R);
+                unregister_code(KC_LCTL);
             }else if (is_vim_wb_active) {
                 tap_8_times_or_once(KC_W);
-                return false;
             } else if (is_vim_ege_active) {
                 tap_8_times_or_once(KC_E);
-                return false;
             } else if (is_sc_tab_active) {
                 tap_8_times_or_once(KC_TAB);
-                return false;
             } else if (is_redo_y_active) {
-                tap_8_times_or_once(C(KC_Y));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_Y);
+                unregister_code(KC_LCTL);
             } else if (is_undo_z_active) {
-                tap_8_times_or_once(S(C(KC_Z)));
-                return false;
+                register_code(KC_LCTL);
+                register_code(KC_LSFT);
+                tap_8_times_or_once(KC_Z);
+                unregister_code(KC_LCTL);
+                unregister_code(KC_LSFT);
             }
             else{
-                return true;
+                switch (get_highest_layer(layer_state)) {
+                    case _SYM:
+                        tap_8_times_or_once(KC_DEL);
+                        break;
+                    case _NAV:
+                        tap_8_times_or_once(KC_VOLU);
+                        break;
+                    case _MOUSE:
+                        tap_code(MS_RGHT);
+                        break;
+                    default:
+                        tap_8_times_or_once(KC_DOWN);
+                        break;
+
+                }
             }
 
         }
@@ -264,53 +303,93 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
         if (!clockwise) {
             if(is_strange_active){
                 tap_8_times_or_once(KC_U);
-                return false;
             }else if (is_vim_wb_active) {
-                tap_8_times_or_once(KC_RCBR);
-                return false;
+                register_code(KC_LSFT);
+                tap_8_times_or_once(KC_RBRC);
+                unregister_code(KC_LSFT);
             } else if (is_vim_ege_active) {
                 tap_8_times_or_once(KC_DOWN);
-                return false;
             } else if (is_sc_tab_active) {
-                tap_8_times_or_once(S(KC_TAB));
-                return false;
+                register_code(KC_LSFT);
+                tap_8_times_or_once(KC_TAB);
+                unregister_code(KC_LSFT);
             }else if (is_redo_y_active) {
-                tap_8_times_or_once(C(KC_Z));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_Z);
+                unregister_code(KC_LCTL);
             } else if (is_undo_z_active) {
-                tap_8_times_or_once(C(KC_Z));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_Z);
+                unregister_code(KC_LCTL);
             }
             else{
-                return true;
+
+
+                switch (get_highest_layer(layer_state)) {
+                    case _SYM:
+                        tap_8_times_or_once(KC_DEL);
+                        break;
+                    case _NAV:
+                        tap_8_times_or_once(KC_MS_WH_DOWN);
+                        break;
+                    case _MOUSE:
+                        tap_code(MS_DOWN);
+                        break;
+                    case _NUM:
+                        tap_code(get_alt_repeat_key_keycode());
+                    default:
+                        tap_8_times_or_once(KC_DOWN);
+                        break;
+
+                }
             }
 
         } else {
             if(is_strange_active){
-                tap_8_times_or_once(C(KC_R));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_R);
+                unregister_code(KC_LCTL);
             }else if (is_vim_wb_active) {
-                tap_8_times_or_once(KC_LCBR);
-                return false;
+                register_code(KC_LSFT);
+                tap_8_times_or_once(KC_LBRC);
+                unregister_code(KC_LSFT);
             } else if (is_vim_ege_active) {
                 tap_8_times_or_once(KC_UP);
-                return false;
             } else if (is_sc_tab_active) {
                 tap_8_times_or_once(KC_TAB);
-                return false;
             } else if (is_redo_y_active) {
-                tap_8_times_or_once(C(KC_Y));
-                return false;
+                register_code(KC_LCTL);
+                tap_8_times_or_once(KC_Y);
+                unregister_code(KC_LCTL);
             } else if (is_undo_z_active) {
-                tap_8_times_or_once(S(C(KC_Z)));
-                return false;
+                register_code(KC_LCTL);
+                register_code(KC_LSFT);
+                tap_8_times_or_once(KC_Z);
+                unregister_code(KC_LCTL);
+                unregister_code(KC_LSFT);
             } else{
-                return true;
+                switch (get_highest_layer(layer_state)) {
+                    case _SYM:
+                        tap_8_times_or_once(KC_BSPC);
+                        break;
+                    case _NAV:
+                        tap_8_times_or_once(KC_VOLD);
+                        break;
+                    case _MOUSE:
+                        tap_code(MS_UP);
+                        break;
+                    case _NUM:
+                        tap_code(get_last_keycode());
+                    default:
+                        tap_8_times_or_once(KC_UP);
+                        break;
+
+                }
             }
 
         }
     }
-    return true;
+    return false;
 }
 
 
