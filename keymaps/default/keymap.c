@@ -1,31 +1,71 @@
 // Copyright 2023 QMK
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <stdint.h>
+#include "action.h"
 #include "keycodes.h"
 #include "keymap_us.h"
+#include "matrix.h"
 #include "modifiers.h"
 #include "quantum_keycodes.h"
+#include "timer.h"
 #include QMK_KEYBOARD_H
+
+#define CHECK_AND_TAP(key, is_held, is_active, timer) \
+    if (is_held && !is_active) { \
+        is_held = false; \
+        timer = 0; \
+        tap_code(key); \
+    }
+
+#define PROCESS_SCROLL_LAYER(key, is_held, is_active, timer) \
+    case key: \
+      if (record->event.pressed) { \
+          is_held = true; \
+          timer = 0; \
+      } else { \
+          is_held = false; \
+          timer = 0; \
+      } \
+      return false; // Skip all further processing of this key
+
+// // define macro for this snippet:
+//     if (is_8_held) {
+//         if(timer_elapsed(is_rep_8_timer) > CUSTOM_TAP_LAYER_TIMEOUT) {
+//             is_rep_8_active = true;
+//         }
+//     }
+#define TRY_TO_ACTIVATE_LAYER_KEY(is_held, timer, is_active, timeout) \
+    if (is_held) { \
+        if(timer_elapsed(timer) > timeout) { \
+            is_active = true; \
+        } \
+    }
+
+
+#define ACTIVATE_LAYER_KEY(is_held, is_active, timer) \
+    if (is_held) { \
+        is_active = true; \
+        timer = 0; \
+    }
 
 #define _QWERTY      0
 #define _SYM         1
 #define _NAV         2
 #define _NUM         3
-#define _SC_TAB      4
-#define _VIM_WB      5
-#define _VIM_EGE     6
-#define _MOUSE       7
-#define _STRANGE     8
-#define _WASD        9
-#define _DOUBLE      10
+// #define _SC_TAB      4
+// #define _VIM_WB      5
+// #define _VIM_EGE     6
+#define _MOUSE       4
+// #define _STRANGE     5
+#define _WASD        5
+#define _DOUBLE      6
 
 #define LMTL MT(MOD_LCTL, KC_LEFT)
 #define LMTR MT(MOD_LGUI, KC_RIGHT)
 #define RMTD MT(MOD_RGUI, KC_DOWN)
 #define RMTU MT(MOD_RCTL, KC_UP)
-#define VLTW LT(_VIM_WB, KC_W)
-#define VLTE LT(_VIM_EGE, KC_E)
+// #define VLTW LT(_VIM_WB, KC_W)
+// #define VLTE LT(_VIM_EGE, KC_E)
 
 #define CUSTOM_TAP_LAYER_TIMEOUT 1000
 
@@ -37,11 +77,11 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
      [_NUM        ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(QK_REP, QK_REP)            },
      [_WASD       ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
      [_DOUBLE     ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
-     [_SC_TAB     ] =  { ENCODER_CCW_CW(RSFT(KC_TAB), KC_TAB), ENCODER_CCW_CW(RSFT(KC_TAB), KC_TAB)   },
-     [_VIM_WB     ] =  { ENCODER_CCW_CW(KC_B, KC_W), ENCODER_CCW_CW(KC_RCBR, KC_LCBR)                 },
-    [_VIM_EGE     ] =  { ENCODER_CCW_CW(KC_B, KC_E), ENCODER_CCW_CW(KC_DOWN, KC_UP)                  },
+    //  [_SC_TAB     ] =  { ENCODER_CCW_CW(RSFT(KC_TAB), KC_TAB), ENCODER_CCW_CW(RSFT(KC_TAB), KC_TAB)   },
+    //  [_VIM_WB     ] =  { ENCODER_CCW_CW(KC_B, KC_W), ENCODER_CCW_CW(KC_RCBR, KC_LCBR)                 },
+    // [_VIM_EGE     ] =  { ENCODER_CCW_CW(KC_B, KC_E), ENCODER_CCW_CW(KC_DOWN, KC_UP)                  },
       [_MOUSE     ] =  { ENCODER_CCW_CW(MS_LEFT, MS_RGHT), ENCODER_CCW_CW(MS_DOWN, MS_UP)                    },
-      [_STRANGE     ] =  { ENCODER_CCW_CW(MS_LEFT, MS_RGHT), ENCODER_CCW_CW(MS_DOWN, MS_UP)                    },
+      // [_STRANGE     ] =  { ENCODER_CCW_CW(MS_LEFT, MS_RGHT), ENCODER_CCW_CW(MS_DOWN, MS_UP)                    },
     //                  Encoder 1                                     Encoder 2
 };
 #endif
@@ -51,11 +91,25 @@ bool is_rep_8_active = false;
 bool is_vim_wb_active = false;
 bool is_vim_ege_active = false;
 bool is_sc_tab_active = false;
+bool is_strange_active = false;
+bool is_redo_y_active = false;
+bool is_undo_z_active = false;
+
+bool is_8_held = false;
+bool is_w_held = false;
+bool is_e_held = false;
+bool is_tab_held = false;
+bool is_r_held = false;
+bool is_y_held = false;
+bool is_z_held = false;
 
 uint16_t is_rep_8_timer = 0;
 uint16_t is_vim_wb_timer = 0;
 uint16_t is_vim_ege_timer = 0;
 uint16_t is_sc_tab_timer = 0;
+uint16_t is_strange_timer = 0;
+uint16_t is_redo_y_timer = 0;
+uint16_t is_undo_z_timer = 0;
 
 
 
@@ -65,7 +119,7 @@ uint16_t is_sc_tab_timer = 0;
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_QWERTY] = LAYOUT_split_70(
                                KC_ESC, KC_2, KC_3, KC_4,             KC_5,                                                                 KC_6, KC_7,       KC_8,     KC_9,    KC_DEL,
-            KC_HOME, KC_GRAVE, KC_1,   VLTW, VLTE, KC_R,             KC_T,                                                                 KC_Y, KC_U,       KC_I,     KC_O,    KC_0,    KC_MINS,   KC_EQL,
+            KC_HOME, KC_GRAVE, KC_1,   KC_W, KC_E, KC_R,             KC_T,                                                                 KC_Y, KC_U,       KC_I,     KC_O,    KC_0,    KC_MINS,   KC_EQL,
             KC_END,  KC_TAB,   KC_Q,   KC_S, KC_D, KC_F,             KC_G,                                                                 KC_H, KC_J,       KC_K,     KC_L,    KC_P,    KC_LBRC,   KC_RBRC,
             KC_LCTL, KC_CAPS,  KC_A,   KC_X, KC_C, LT(_MOUSE, KC_V), KC_B, LT(_NUM, KC_SPC),                             KC_ENTER,  KC_N,  KC_M, KC_COMM,    KC_DOT,   KC_SCLN, KC_QUOT, KC_BSLS,
                      KC_LSFT,  KC_Z,   LMTL, LMTR, KC_LCTL,          KC_LGUI, KC_LALT,   LT(_NAV, KC_ESC),   LT(_SYM, KC_BSPC),  KC_RSFT,  KC_RCTL, KC_RCTL, RMTD,     RMTU,    KC_SLSH, KC_RSFT
@@ -109,22 +163,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                    KC_NO, KC_NO,            KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO
 
     ),
-    [_SC_TAB] = LAYOUT_split_70(
-                              _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______, _______,                   _______, _______, _______, _______, _______, _______, _______, _______,
-                     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
-
-    ),
-    // [_REP_8] = LAYOUT_split_70(
-    //                           _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______,
-    //         _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-    //         _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-    //         _______, _______, _______, _______, _______, _______, _______, _______,                   _______, _______, _______, _______, _______, _______, _______, _______,
-    //                  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
-    //
-    // ),
     // [_MT_QWERTY] = LAYOUT_split_70(
     //                            KC_ESC,             KC_2,             KC_3,    KC_4,    KC_5,                                                                 KC_6,     KC_7,     KC_8,     KC_9,     KC_DEL,
     //         KC_HOME, KC_GRAVE, KC_1,               VLTW,             VLTE,    KC_R,    KC_T,                                                                 KC_Y,     KC_U,     KC_I,     KC_O,     KC_0,      KC_MINS,   KC_EQL,
@@ -133,33 +171,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //                  KC_LSFT,  KC_Z,               LMTL,             LMTR, KC_LCTL, KC_LGUI, KC_LALT,   LT(_NAV, KC_BSPC),   LT(_SYM, KC_ESC), KC_RSFT,   KC_RCTL,  KC_RCTL,  RMTD,  RMTU,  KC_SLSH,  KC_RSFT
     //
     // ),
-    [_VIM_WB] = LAYOUT_split_70(
-
-                              _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______, _______,                   _______, _______, _______, _______, _______, _______, _______, _______,
-                     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
-
-    ),
-    [_STRANGE] = LAYOUT_split_70(
-
-                              _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______, _______,                   _______, _______, _______, _______, _______, _______, _______, _______,
-                     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
-
-    ),
-    [_VIM_EGE] = LAYOUT_split_70(
-
-                              _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______, _______, _______,
-            _______, _______, _______, _______, _______, _______, _______, _______,                   _______, _______, _______, _______, _______, _______, _______, _______,
-                     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
-
-    ),
     [_MOUSE] = LAYOUT_split_70(
 
                               _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______,
@@ -172,54 +183,130 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 
+void tap_8_times_or_once(uint16_t keycode) {
+    if (is_rep_8_active) {
+        tap_code(keycode); tap_code(keycode); tap_code(keycode); tap_code(keycode);
+        tap_code(keycode); tap_code(keycode); tap_code(keycode); tap_code(keycode);
+    } else {
+        tap_code(keycode);
+    }
+}
+
+
 bool encoder_update_user(uint8_t index, bool clockwise) {
-    layer_state_t current_layer_state = get_highest_layer(layer_state);
+    ACTIVATE_LAYER_KEY(is_8_held, is_rep_8_active, is_rep_8_timer);
+    ACTIVATE_LAYER_KEY(is_w_held, is_vim_wb_active, is_vim_wb_timer);
+    ACTIVATE_LAYER_KEY(is_e_held, is_vim_ege_active, is_vim_ege_timer);
+    ACTIVATE_LAYER_KEY(is_tab_held, is_sc_tab_active, is_sc_tab_timer);
+    ACTIVATE_LAYER_KEY(is_r_held, is_strange_active, is_strange_timer);
+    ACTIVATE_LAYER_KEY(is_y_held, is_redo_y_active, is_redo_y_timer);
+    ACTIVATE_LAYER_KEY(is_z_held, is_undo_z_active, is_undo_z_timer);
+
+
 
     if (index == 0) { /* First encoder */
         if (!clockwise) {
-            switch (get_highest_layer(layer_state)) {
-                case _QWERTY:
-                    tap_code(KC_LEFT); tap_code(KC_LEFT); tap_code(KC_LEFT); tap_code(KC_LEFT);
-                    tap_code(KC_LEFT); tap_code(KC_LEFT); tap_code(KC_LEFT); tap_code(KC_LEFT);
-                    break;
-                default:
-                    return true;
+            if(is_strange_active){
+                tap_8_times_or_once(KC_U);
+                return false;
+            }else if (is_vim_wb_active) {
+                tap_8_times_or_once(KC_B);
+                return false;
+            } else if (is_vim_ege_active) {
+                if (is_rep_8_active){
+                    tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E);
+                    tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E);
+                }
+                else{
+                    tap_code(KC_G);tap_code(KC_E);
+                }
+                return false;
+            } else if (is_sc_tab_active) {
+                tap_8_times_or_once(S(KC_TAB));
+                return false;
+            } else if (is_redo_y_active) {
+                tap_8_times_or_once(C(KC_Z));
+                return false;
+            } else if (is_undo_z_active) {
+                tap_8_times_or_once(C(KC_Z));
+                return false;
             }
-            return false;
+            else{
+                return true;
+            }
 
         } else {
-            switch (get_highest_layer(layer_state)) {
-                case _QWERTY:
-                    tap_code(KC_RIGHT); tap_code(KC_RIGHT); tap_code(KC_RIGHT); tap_code(KC_RIGHT);
-                    tap_code(KC_RIGHT); tap_code(KC_RIGHT); tap_code(KC_RIGHT); tap_code(KC_RIGHT);
-                    break;
-                default:
-                    return true;
+            if(is_strange_active){
+                tap_8_times_or_once(C(KC_R));
+                return false;
+            }else if (is_vim_wb_active) {
+                tap_8_times_or_once(KC_W);
+                return false;
+            } else if (is_vim_ege_active) {
+                tap_8_times_or_once(KC_E);
+                return false;
+            } else if (is_sc_tab_active) {
+                tap_8_times_or_once(KC_TAB);
+                return false;
+            } else if (is_redo_y_active) {
+                tap_8_times_or_once(C(KC_Y));
+                return false;
+            } else if (is_undo_z_active) {
+                tap_8_times_or_once(S(C(KC_Z)));
+                return false;
             }
-            return false;
+            else{
+                return true;
+            }
+
         }
     } else if (index == 1) { /* Second encoder */
         if (!clockwise) {
+            if(is_strange_active){
+                tap_8_times_or_once(KC_U);
+                return false;
+            }else if (is_vim_wb_active) {
+                tap_8_times_or_once(KC_RCBR);
+                return false;
+            } else if (is_vim_ege_active) {
+                tap_8_times_or_once(KC_DOWN);
+                return false;
+            } else if (is_sc_tab_active) {
+                tap_8_times_or_once(S(KC_TAB));
+                return false;
+            }else if (is_redo_y_active) {
+                tap_8_times_or_once(C(KC_Z));
+                return false;
+            } else if (is_undo_z_active) {
+                tap_8_times_or_once(C(KC_Z));
+                return false;
+            }
+            else{
+                return true;
+            }
 
-            switch (get_highest_layer(layer_state)) {
-                case _QWERTY:
-                    tap_code(KC_DOWN); tap_code(KC_DOWN); tap_code(KC_DOWN); tap_code(KC_DOWN);
-                    tap_code(KC_DOWN); tap_code(KC_DOWN); tap_code(KC_DOWN); tap_code(KC_DOWN);
-                    break;
-                default:
-                    return true;
-            }
-            return false;
         } else {
-            switch (get_highest_layer(layer_state)) {
-                case _QWERTY:
-                    tap_code(KC_UP); tap_code(KC_UP); tap_code(KC_UP); tap_code(KC_UP);
-                    tap_code(KC_UP); tap_code(KC_UP); tap_code(KC_UP); tap_code(KC_UP);
-                    break;
-                default:
-                    return true;
+            if(is_strange_active){
+                tap_8_times_or_once(C(KC_R));
+                return false;
+            }else if (is_vim_wb_active) {
+                tap_8_times_or_once(KC_LCBR);
+                return false;
+            } else if (is_vim_ege_active) {
+                tap_8_times_or_once(KC_UP);
+                return false;
+            } else if (is_sc_tab_active) {
+                tap_8_times_or_once(KC_TAB);
+                return false;
+            } else if (is_redo_y_active) {
+                tap_8_times_or_once(C(KC_Y));
+                return false;
+            } else if (is_undo_z_active) {
+                tap_8_times_or_once(S(C(KC_Z)));
+                return false;
+            } else{
+                return true;
             }
-            return false;
 
         }
     }
@@ -230,19 +317,36 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
-    case KC_8:
-      if (record->event.pressed) {
-        // Do something when pressed
-      } else {
-        // Do something else when release
-      }
-      return false; // Skip all further processing of this key
-    case KC_ENTER:
-      // Play a tone when enter is pressed
-      if (record->event.pressed) {
-      }
-      return true; // Let QMK send the enter press/release events
+      PROCESS_SCROLL_LAYER(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer);
+      PROCESS_SCROLL_LAYER(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer);
+      PROCESS_SCROLL_LAYER(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer);
+      PROCESS_SCROLL_LAYER(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer);
+      PROCESS_SCROLL_LAYER(KC_R, is_r_held, is_strange_active, is_strange_timer);
+      PROCESS_SCROLL_LAYER(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer);
+      PROCESS_SCROLL_LAYER(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer);
+
     default:
+      CHECK_AND_TAP(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer);
+      CHECK_AND_TAP(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer);
+      CHECK_AND_TAP(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer);
+      CHECK_AND_TAP(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer);
+      CHECK_AND_TAP(KC_R, is_r_held, is_strange_active, is_strange_timer);
+      CHECK_AND_TAP(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer);
+      CHECK_AND_TAP(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer);
       return true; // Process all other keycodes normally
   }
 }
+
+
+void matrix_scan_user(void){
+    TRY_TO_ACTIVATE_LAYER_KEY(is_8_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
+    TRY_TO_ACTIVATE_LAYER_KEY(is_w_held, is_vim_wb_timer, is_vim_wb_active, CUSTOM_TAP_LAYER_TIMEOUT);
+    TRY_TO_ACTIVATE_LAYER_KEY(is_e_held, is_vim_ege_timer, is_vim_ege_active, CUSTOM_TAP_LAYER_TIMEOUT);
+    TRY_TO_ACTIVATE_LAYER_KEY(is_tab_held, is_sc_tab_timer, is_sc_tab_active, CUSTOM_TAP_LAYER_TIMEOUT);
+    TRY_TO_ACTIVATE_LAYER_KEY(is_r_held, is_strange_timer, is_strange_active, CUSTOM_TAP_LAYER_TIMEOUT);
+    TRY_TO_ACTIVATE_LAYER_KEY(is_y_held, is_redo_y_timer, is_redo_y_active, CUSTOM_TAP_LAYER_TIMEOUT);
+    TRY_TO_ACTIVATE_LAYER_KEY(is_z_held, is_undo_z_timer, is_undo_z_active, CUSTOM_TAP_LAYER_TIMEOUT);
+
+}
+
+
