@@ -1,7 +1,5 @@
 # sheriff
 
-![sheriff](imgur.com image replace me!)
-
 *A short description of the keyboard/project*
 
 * Keyboard Maintainer: [Adrian Lym](https://github.com/AJGamma)
@@ -18,16 +16,14 @@ Flashing example for this keyboard:
 
 See the [build environment setup](https://docs.qmk.fm/#/getting_started_build_tools) and the [make instructions](https://docs.qmk.fm/#/getting_started_make_guide) for more information. Brand new to QMK? Start with our [Complete Newbs Guide](https://docs.qmk.fm/#/newbs).
 
-## Bootloader
 
-Enter the bootloader in 3 ways:
+## Branches
+Currently there are 2 versions of keymaps, each version uses a different way to implement scroll wheel functions.
 
-* **Bootmagic reset**: Hold down the key at (0,0) in the matrix (usually the top left key or Escape) and plug in the keyboard
-* **Physical reset button**: Briefly press the button on the back of the PCB - some may have pads you must short instead
-* **Keycode in layout**: Press the key mapped to `QK_BOOT` if it is available
-
+- the `default` version uses layers to implement scroll wheel functions. The limitation of this method is that you can only define 16 layer-tap layers, and there's currently no implementations of macros, so repeat-8-times behavior is not possible. 
+- the `custom_scroll_layers` version uses custom functions to implement scroll wheel functions. This version is more flexible, with macros implemented, but the tap behaviors are not as advanced as that of the `default` version, with tap-hold repeating unavailable.
 
 ## TODO
 - [X] Mouse emulation
-- [ ] Macro
-- [ ] Repeat 8 times layer
+- [X] Macro
+- [X] Repeat 8 times layer
