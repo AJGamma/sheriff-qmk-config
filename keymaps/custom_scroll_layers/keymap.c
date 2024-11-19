@@ -77,6 +77,7 @@
 // #define VLTE LT(_VIM_EGE, KC_E)
 
 #define CUSTOM_TAP_LAYER_TIMEOUT 10000
+#define SCROLL_MOUSE_DELAY      20
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
@@ -194,10 +195,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 void tap_8_times_or_once(uint16_t keycode) {
     if (is_rep_8_active) {
-        tap_code(keycode); tap_code(keycode); tap_code(keycode); tap_code(keycode);
-        tap_code(keycode); tap_code(keycode); tap_code(keycode); tap_code(keycode);
+        tap_code16(keycode); tap_code16(keycode); tap_code16(keycode); tap_code16(keycode);
+        tap_code16(keycode); tap_code16(keycode); tap_code16(keycode); tap_code16(keycode);
     } else {
-        tap_code(keycode);
+        tap_code16(keycode);
     }
 }
 
@@ -228,17 +229,11 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                     tap_code(KC_G);tap_code(KC_E);
                 }
             } else if (is_sc_tab_active) {
-                register_code(KC_LSFT);
-                tap_8_times_or_once(KC_TAB);
-                unregister_code(KC_LSFT);
+                tap_8_times_or_once(S(KC_TAB));
             } else if (is_redo_y_active) {
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_Z);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_Z));
             } else if (is_undo_z_active) {
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_Z);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_Z));
             }
             else{
                 switch (get_highest_layer(layer_state)) {
@@ -249,7 +244,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                         tap_8_times_or_once(KC_VOLD);
                         break;
                     case _MOUSE:
-                        tap_code(MS_LEFT);
+                        tap_code_delay(MS_LEFT, SCROLL_MOUSE_DELAY);
                         break;
                     default:
                         tap_8_times_or_once(KC_LEFT);
@@ -260,9 +255,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
         } else {
             if(is_strange_active){
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_R);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_R));
             }else if (is_vim_wb_active) {
                 tap_8_times_or_once(KC_W);
             } else if (is_vim_ege_active) {
@@ -270,15 +263,9 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
             } else if (is_sc_tab_active) {
                 tap_8_times_or_once(KC_TAB);
             } else if (is_redo_y_active) {
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_Y);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_Y));
             } else if (is_undo_z_active) {
-                register_code(KC_LCTL);
-                register_code(KC_LSFT);
-                tap_8_times_or_once(KC_Z);
-                unregister_code(KC_LCTL);
-                unregister_code(KC_LSFT);
+                tap_8_times_or_once(S(C(KC_Z)));
             }
             else{
                 switch (get_highest_layer(layer_state)) {
@@ -289,7 +276,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                         tap_8_times_or_once(KC_VOLU);
                         break;
                     case _MOUSE:
-                        tap_code(MS_RGHT);
+                        tap_code_delay(MS_RGHT, SCROLL_MOUSE_DELAY);
                         break;
                     default:
                         tap_8_times_or_once(KC_RIGHT);
@@ -302,27 +289,17 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
     } else if (index == 1) { /* Second encoder */
         if (!clockwise) {
             if(is_strange_active){
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_R);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_R));
             }else if (is_vim_wb_active) {
-                register_code(KC_LSFT);
-                tap_8_times_or_once(KC_RBRC);
-                unregister_code(KC_LSFT);
+                tap_8_times_or_once(KC_RCBR);
             } else if (is_vim_ege_active) {
                 tap_8_times_or_once(KC_DOWN);
             } else if (is_sc_tab_active) {
-                register_code(KC_LSFT);
-                tap_8_times_or_once(KC_TAB);
-                unregister_code(KC_LSFT);
+                tap_8_times_or_once(S(KC_TAB));
             }else if (is_redo_y_active) {
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_Z);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_Z));
             } else if (is_undo_z_active) {
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_Z);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_Z));
             }
             else{
 
@@ -335,10 +312,10 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                         tap_8_times_or_once(KC_MS_WH_DOWN);
                         break;
                     case _MOUSE:
-                        tap_code(MS_DOWN);
+                        tap_code_delay(MS_DOWN, SCROLL_MOUSE_DELAY);
                         break;
                     case _NUM:
-                        tap_code(get_alt_repeat_key_keycode());
+                        tap_code16(get_alt_repeat_key_keycode());
                         break;
                     default:
                         tap_8_times_or_once(KC_DOWN);
@@ -351,23 +328,15 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
             if(is_strange_active){
                 tap_8_times_or_once(KC_U);
             }else if (is_vim_wb_active) {
-                register_code(KC_LSFT);
-                tap_8_times_or_once(KC_LBRC);
-                unregister_code(KC_LSFT);
+                tap_8_times_or_once(S(KC_LBRC));
             } else if (is_vim_ege_active) {
                 tap_8_times_or_once(KC_UP);
             } else if (is_sc_tab_active) {
                 tap_8_times_or_once(KC_TAB);
             } else if (is_redo_y_active) {
-                register_code(KC_LCTL);
-                tap_8_times_or_once(KC_Y);
-                unregister_code(KC_LCTL);
+                tap_8_times_or_once(C(KC_Y));
             } else if (is_undo_z_active) {
-                register_code(KC_LCTL);
-                register_code(KC_LSFT);
-                tap_8_times_or_once(KC_Z);
-                unregister_code(KC_LCTL);
-                unregister_code(KC_LSFT);
+                tap_8_times_or_once(C(S(KC_Z)));
             } else{
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
@@ -377,10 +346,10 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                         tap_8_times_or_once(KC_MS_WH_UP);
                         break;
                     case _MOUSE:
-                        tap_code(MS_UP);
+                        tap_code_delay(MS_UP, SCROLL_MOUSE_DELAY);
                         break;
                     case _NUM:
-                        tap_code(get_last_keycode());
+                        tap_code16(get_last_keycode());
                         break;
                     default:
                         tap_8_times_or_once(KC_UP);
