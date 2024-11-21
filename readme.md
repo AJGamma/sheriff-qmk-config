@@ -62,6 +62,8 @@ Currently there are 2 versions of keymaps, each version uses a different way to 
 | Y         | C-z                         | C-y                         | C-y                         | C-z                           |             |
 | Z         | C-z                         | S-C-z                       | S-C-z                       | C-z                           |             |
 
+### Mouse Emulation
+Hold `a` `s` `d` for speed control see [keymap file](keymaps/custom_scroll_layers/keymap.c) for details.
 
 
 ## TODO
@@ -69,12 +71,17 @@ Currently there are 2 versions of keymaps, each version uses a different way to 
 - [X] Macro
 - [X] Repeat 8 times layer
 - [ ] Key codes depending on different OS's
-- [ ] fix the problem that repeat does not include modifiers
-- [ ] implement mod-tap for custom_scroll_layers keymap
+- [X] fix the problem that repeat does not include modifiers
+- [X] disable scroll layers and enable holds on wasd layer
+- [X] implement mod-tap for custom_scroll_layers keymap
 - [ ] Single handed use
 - [ ] Macropad layer
 - [ ] Dynamic macros
 - Scroll wheel behaviors:
     - [ ] Vim jump list
     - [ ] Emacs undo/redo
-    - [ ] Vim C-a C-x
+    - [O] Vim C-a C-x
+    - [O] Vim semicolon comma
+    - [O] Vim search
+    - [O] Vim C-o C-i
+    - [X] Vim gj gk
