@@ -75,6 +75,7 @@ Hold `a` `s` `d` for speed control see [keymap file](keymaps/custom_scroll_layer
 - [X] disable scroll layers and enable holds on wasd layer
 - [X] implement mod-tap for custom_scroll_layers keymap
 - [ ] Single handed use
+- [ ] Tap-hold behaviors
 - [ ] Macropad layer
 - [ ] Dynamic macros
 - Scroll wheel behaviors:
