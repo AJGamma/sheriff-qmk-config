@@ -11,7 +11,7 @@
 ```bash
 # for example, in MacOS or Linux:
 cd ~/qmk_firmware/keyboards
-git clone https://github.com/AJGamma/sheriff-qmk-config
+git clone https://github.com/AJGamma/sheriff-qmk-config sheriff
 ```
 3. Compile and flash:
 ```bash
