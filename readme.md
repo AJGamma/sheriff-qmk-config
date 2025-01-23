@@ -22,6 +22,9 @@ qmk flash -kb sheriff -km default
 ```
 use `qmk config user.keyboard=sheriff user.keymap=custom_scroll_layers` to set default parameters, and then you can use `qmk compile` and `qmk flash` without specifying the keyboard and keymap.
 
+4. Generate compilation database with `qmk generate-compilation-database`
+
+
 
 ## Branches
 Currently there are 2 versions of keymaps, each version uses a different way to implement scroll wheel functions.
