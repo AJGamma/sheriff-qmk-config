@@ -22,6 +22,9 @@ qmk flash -kb sheriff -km default
 ```
 use `qmk config user.keyboard=sheriff user.keymap=custom_scroll_layers` to set default parameters, and then you can use `qmk compile` and `qmk flash` without specifying the keyboard and keymap.
 
+4. Generate compilation database with `qmk generate-compilation-database`
+
+
 
 ## Branches
 Currently there are 2 versions of keymaps, each version uses a different way to implement scroll wheel functions.
@@ -74,12 +77,12 @@ Hold `a` `s` `d` for speed control see [keymap file](keymaps/custom_scroll_layer
 - [X] fix the problem that repeat does not include modifiers
 - [X] disable scroll layers and enable holds on wasd layer
 - [X] implement mod-tap for custom_scroll_layers keymap
-- [ ] Single handed use
+- [X] Single handed use
+- [ ] Tap-hold behaviors
 - [ ] Macropad layer
 - [ ] Dynamic macros
 - Scroll wheel behaviors:
     - [ ] Vim jump list
-    - [ ] Emacs undo/redo
     - [O] Vim C-a C-x
     - [O] Vim semicolon comma
     - [O] Vim search
