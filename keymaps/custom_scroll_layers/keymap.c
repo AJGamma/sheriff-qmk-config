@@ -63,12 +63,13 @@
 
 #define _QWERTY      0
 #define _WASD        1
-#define _SINGLE      2          // single handed layer, for stuff like 3D modeling
-#define _SYM         3
-#define _NAV         4
-#define _NUM         5
-#define _MOUSE       6
-#define _DOUBLE      7
+#define _WASD1       2
+#define _SINGLE      3          // single handed layer, for stuff like 3D modeling
+#define _SYM         4
+#define _NAV         5
+#define _NUM         6
+#define _MOUSE       7
+#define _DOUBLE      8
 
 
 #define LMTL MT(MOD_LCTL, KC_LEFT)
@@ -120,6 +121,7 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
      [_NAV     ] =  { ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN) },
      [_NUM     ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(QK_REP, QK_REP)            },
      [_WASD    ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
+     [_WASD1   ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
      [_DOUBLE  ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
      [_MOUSE   ] =  { ENCODER_CCW_CW(MS_LEFT, MS_RGHT), ENCODER_CCW_CW(MS_DOWN, MS_UP)             },
     //                  Encoder 1                                     Encoder 2
@@ -213,6 +215,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
             KC_TRNS, KC_TRNS, KC_LGUI, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,                   KC_ENT,  KC_TRNS, KC_1,    KC_2,    KC_3,    KC_DOT,  KC_TRNS, KC_TRNS,
                      KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_RSFT, KC_0,    KC_TRNS, KC_0,    KC_DOT,  KC_SLSH, KC_TRNS
     ),
+    [_WASD1] = LAYOUT_split_70(
+                               KC_1,   KC_2,  KC_3,    KC_4,    KC_5,                                           KC_6,    KC_7,     KC_8,     KC_9,     DF(_QWERTY),
+            KC_ESC,  KC_TAB,   KC_Q,   KC_W,  KC_E,    KC_R,    KC_T,                                           KC_Y,    KC_U,     KC_I,     KC_O,     KC_0,      KC_MINS,   KC_EQL,
+            KC_GRV,  KC_LSFT,  KC_A,   KC_S,  KC_D,    KC_F,    KC_G,                                           KC_H,    KC_J,     KC_K,     KC_L,     KC_P,      KC_LBRC,   KC_RBRC,
+            KC_LCTL, KC_LSFT,  KC_Z,   KC_X,  KC_C,    KC_V,    KC_B, KC_ENTER,                         KC_ENTER,  KC_N,    KC_M,     KC_COMM,  KC_DOT,   KC_SCLN,   KC_QUOT,   KC_BSLS,
+                     KC_LSFT,  KC_NO,  KC_NO, KC_NO, KC_LCTL, KC_SPC, KC_LALT,   KC_ESC,   KC_TAB, KC_LSFT,    KC_SPC, KC_RCTL,  RMTD,  RMTU,  KC_SLSH,  KC_RSFT
+
+    ),
     [_WASD] = LAYOUT_split_70(
                                KC_1,   KC_2,  KC_3,    KC_4,    KC_5,                                           KC_6,    KC_7,     KC_8,     KC_9,     DF(_QWERTY),
             KC_ESC,  KC_TAB,   KC_Q,   KC_W,  KC_E,    KC_R,    KC_T,                                           KC_Y,    KC_U,     KC_I,     KC_O,     KC_0,      KC_MINS,   KC_EQL,
@@ -224,8 +234,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_DOUBLE] = LAYOUT_split_70(
                           KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
             KC_NO, KC_NO, KC_NO,        DF(_WASD),   KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-            KC_NO, KC_NO, DF(_QWERTY),  DF(_SINGLE), KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-            KC_NO, KC_NO, KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO, KC_NO,               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
+            KC_NO, KC_NO, DF(_QWERTY),  DF(_SINGLE), KC_NO, KC_NO, DF(_WASD1),                        KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_2, KC_NO, KC_NO,
+            KC_NO, KC_NO, KC_NO,        KC_NO,       QK_USER_0, QK_USER_1, KC_NO, KC_NO,               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
                    KC_NO, KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO
 
     ),
@@ -356,7 +366,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
             if(is_strange_active){
                 tap_8_times_or_once(C(KC_R));
             }else if (is_vim_wb_active) {
-                tap_8_times_or_once(KC_RCBR);
+                tap_8_times_or_once_delay(KC_RCBR, 10);
             } else if (is_vim_ege_active) {
                 tap_8_times_or_once(KC_DOWN);
             } else if (is_sc_tab_active) {
@@ -488,6 +498,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         }
         break;
       case (uint16_t)DF(_WASD):
+      case (uint16_t)DF(_WASD1):
           if (!record->event.pressed) {
             is_scroll_layer_deactivated = true;
 
