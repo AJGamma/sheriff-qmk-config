@@ -13,14 +13,21 @@
 #include "quantum_keycodes.h"
 #include "quantum_keycodes_legacy.h"
 #include "repeat_key.h"
+#include "send_string_keycodes.h"
 #include "timer.h"
 #include QMK_KEYBOARD_H
 
-#define CHECK_AND_TAP(key, is_held, is_active, timer) \
-    if (is_held && !is_active) { \
+#define MY_TAP_TIME 3
+#define MY_DELAY_TIME 3
+
+#define CHECK_AND_TAP(key, is_held, is_active, timer, original_key) \
+    if (record->event.pressed && is_held && !is_active) { \
         is_held = false; \
         timer = timer_read(); \
-        tap_code(key); \
+        tap_code_delay(key, MY_TAP_TIME); \
+        SEND_STRING(SS_DELAY(10)); \
+        tap_code_delay(original_key, MY_TAP_TIME); \
+        return false; \
     }
 
 #define PROCESS_SCROLL_LAYER(key, is_held, is_active, timer) \
@@ -526,16 +533,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           break;
 
     default:
-      CHECK_AND_TAP(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer);
-      CHECK_AND_TAP(KC_I, is_i_held, is_rep_8_active, is_rep_8_timer);
-      CHECK_AND_TAP(KC_PGUP, is_pgup_held, is_rep_8_active, is_rep_8_timer);
-      CHECK_AND_TAP(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer);
-      CHECK_AND_TAP(KC_G, is_g_held, is_vim_g_active, is_vim_g_timer);
-      CHECK_AND_TAP(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer);
-      CHECK_AND_TAP(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer);
-      CHECK_AND_TAP(KC_U, is_u_held, is_strange_active, is_strange_timer);
-      CHECK_AND_TAP(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer);
-      CHECK_AND_TAP(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer);
+      CHECK_AND_TAP(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer, keycode);
+      CHECK_AND_TAP(KC_I, is_i_held, is_rep_8_active, is_rep_8_timer, keycode);
+      CHECK_AND_TAP(KC_PGUP, is_pgup_held, is_rep_8_active, is_rep_8_timer, keycode);
+      CHECK_AND_TAP(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer, keycode);
+      CHECK_AND_TAP(KC_G, is_g_held, is_vim_g_active, is_vim_g_timer, keycode);
+      CHECK_AND_TAP(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer, keycode);
+      CHECK_AND_TAP(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer, keycode);
+      CHECK_AND_TAP(KC_U, is_u_held, is_strange_active, is_strange_timer, keycode);
+      CHECK_AND_TAP(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer, keycode);
+      CHECK_AND_TAP(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer, keycode);
       return true; // Process all other keycodes normally
   }
   return true;
