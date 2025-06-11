@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "my_local_passwd.h"
 #include "action.h"
 #include "action_layer.h"
 #include "keycodes.h"
@@ -17,8 +18,12 @@
 #include "timer.h"
 #include QMK_KEYBOARD_H
 
-#define MY_TAP_TIME 3
-#define MY_DELAY_TIME 3
+#define MY_TAP_TIME 7
+#define MY_DELAY_TIME 7
+#define STRING_DELAY 20
+
+#define SEND_PASSWD(str) \
+                SEND_STRING_DELAY(str SS_DELAY(STRING_DELAY) SS_TAP(X_ENTER), STRING_DELAY);
 
 #define CHECK_AND_TAP(key, is_held, is_active, timer, original_key) \
     if (record->event.pressed && is_held && !is_active) { \
@@ -239,8 +244,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     ),
     [_DOUBLE] = LAYOUT_split_70(
-                          KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-            KC_NO, KC_NO, KC_NO,        DF(_WASD),   KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
+                          KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO,                             KC_NO, QK_USER_3, KC_NO, KC_NO, KC_NO,
+            KC_NO, KC_NO, KC_NO,        DF(_WASD),   KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_4, KC_NO,
             KC_NO, KC_NO, DF(_QWERTY),  DF(_SINGLE), KC_NO, KC_NO, DF(_WASD1),                        KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_2, KC_NO, KC_NO,
             KC_NO, KC_NO, KC_NO,        KC_NO,       QK_USER_0, QK_USER_1, KC_NO, KC_NO,               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
                    KC_NO, KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO
@@ -506,6 +511,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         break;
       case (uint16_t)DF(_WASD):
       case (uint16_t)DF(_WASD1):
+
           if (!record->event.pressed) {
             is_scroll_layer_deactivated = true;
 
@@ -531,6 +537,38 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
               is_g_held = false;
          }
           break;
+        case QK_USER_0:
+          if (record->event.pressed) {
+          } else {
+                SEND_PASSWD(PASSWD1)
+          }
+          return false;
+
+        case QK_USER_1:
+          if (record->event.pressed) {
+          } else {
+                SEND_PASSWD(PASSWD2);
+          }
+          return false;
+        case QK_USER_2:
+          if (record->event.pressed) {
+          } else {
+                SEND_PASSWD(PASSWD3);
+          }
+          return false;
+        case QK_USER_3:
+          if (record->event.pressed) {
+          } else {
+                SEND_PASSWD(PASSWD4);
+          }
+          return false;
+
+        case QK_USER_4:
+          if (record->event.pressed) {
+          } else {
+                SEND_PASSWD(PASSWD5);
+          }
+          return false;
 
     default:
       CHECK_AND_TAP(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer, keycode);
