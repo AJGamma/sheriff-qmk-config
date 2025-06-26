@@ -620,6 +620,15 @@ uint16_t get_alt_repeat_key_keycode_user(uint16_t keycode, uint8_t mods) {
     return KC_TRNS; // Defer to default definitions.
 }
 
+bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case LT(_NUM, KC_SPC):
+            return false;
+        default:
+            return true;
+    }
+}
+
 // layer_state_t layer_state_set_user(layer_state_t state) {
 // // This does not work
 //     switch (get_highest_layer(state)) {
