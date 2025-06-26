@@ -656,6 +656,7 @@ uint16_t get_alt_repeat_key_keycode_user(uint16_t keycode, uint8_t mods) {
 bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case LT(_NUM, KC_SPC):
+        case LT(_MOUSE, KC_V):
             return false;
         default:
             return true;
