@@ -2,8 +2,9 @@
 #pragma once
 
 // default layer count
-#define DYNAMIC_KEYMAP_LAYER_COUNT 8
+#define DYNAMIC_KEYMAP_LAYER_COUNT 9
 
 #define ENCODER_RESOLUTION 4
 #define ENCODER_RESOLUTION_RIGHT 4
 #define TAPPING_TERM_PER_KEY
+#define HOLD_ON_OTHER_KEY_PRESS_PER_KEY

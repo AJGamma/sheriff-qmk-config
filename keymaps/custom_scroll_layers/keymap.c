@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "action_util.h"
+#include "my_local_passwd.h"
 #include "action.h"
 #include "action_layer.h"
 #include "keycodes.h"
@@ -13,63 +15,53 @@
 #include "quantum_keycodes.h"
 #include "quantum_keycodes_legacy.h"
 #include "repeat_key.h"
+#include "send_string_keycodes.h"
 #include "timer.h"
 #include QMK_KEYBOARD_H
 
-#define CHECK_AND_TAP(key, is_held, is_active, timer) \
-    if (is_held && !is_active) { \
-        is_held = false; \
-        timer = timer_read(); \
-        tap_code(key); \
+#define MY_TAP_TIME 7
+#define MY_DELAY_TIME 7
+#define STRING_DELAY 20
+
+#define SEND_PASSWD(str) SEND_STRING_DELAY(str SS_DELAY(STRING_DELAY) SS_TAP(X_ENTER), STRING_DELAY);
+#define CHECK_AND_TAP__(key, is_held, is_active, timer, original_key) \
+    if ((record->event.pressed) && (is_held) && !(is_active)) {       \
+        (is_held) = false;                                            \
+        (timer)   = timer_read();                                     \
+        tap_code_delay((key), MY_TAP_TIME);                           \
+        SEND_STRING(SS_DELAY(10));                                    \
+        tap_code_delay((original_key), MY_TAP_TIME);                  \
+        return false;                                                 \
     }
 
-#define PROCESS_SCROLL_LAYER(key, is_held, is_active, timer) \
-    case key: \
-      if (record->event.pressed) { \
-          is_held = true; \
-          timer = timer_read(); \
-      } else { \
-          if (is_held){\
-              tap_code(key);\
-          }\
-          is_held = false; \
-          is_active = false; \
-          timer = timer_read(); \
-      } \
-      return false; // Skip all further processing of this key
+#define CHECK_AND_TAP(key, layer, original_key)                                 \
+    if ((record->event.pressed) && ((layer).is_held) && !((layer).is_active)) { \
+        (layer).is_held = false;                                                \
+        (layer).timer   = timer_read();                                         \
+        tap_code_delay((key), MY_TAP_TIME);                                     \
+        SEND_STRING(SS_DELAY(10));                                              \
+        tap_code_delay((original_key), MY_TAP_TIME);                            \
+        return false;                                                           \
+    }
 
-// // define macro for this snippet:
-//     if (is_8_held) {
-//         if(timer_elapsed(is_rep_8_timer) > CUSTOM_TAP_LAYER_TIMEOUT) {
-//             is_rep_8_active = true;
-//         }
-//     }
 #define TRY_TO_ACTIVATE_LAYER_KEY(is_held, timer, is_active, timeout) \
-    if (is_held) { \
-        if(timer_elapsed(timer) > timeout) { \
-            is_active = true; \
-            is_held = false; \
-            timer = timer_read(); \
-        } \
+    if (is_held) {                                                    \
+        if (timer_elapsed(timer) > timeout) {                         \
+            is_active = true;                                         \
+            is_held   = false;                                        \
+            timer     = timer_read();                                 \
+        }                                                             \
     }
 
-
-#define ACTIVATE_LAYER_KEY(is_held, is_active, timer) \
-    if (is_held) { \
-        is_active = true; \
-        is_held = false; \
-        timer = timer_read(); \
-    }
-
-#define _QWERTY      0
-#define _WASD        1
-#define _SINGLE      2          // single handed layer, for stuff like 3D modeling
-#define _SYM         3
-#define _NAV         4
-#define _NUM         5
-#define _MOUSE       6
-#define _DOUBLE      7
-
+#define _QWERTY 0
+#define _WASD 1
+#define _WASD1 2
+#define _SINGLE 3 // single handed layer, for stuff like 3D modeling
+#define _SYM 4
+#define _NAV 5
+#define _NUM 6
+#define _MOUSE 7
+#define _DOUBLE 8
 
 #define LMTL MT(MOD_LCTL, KC_LEFT)
 #define LMTR MT(MOD_LGUI, KC_RIGHT)
@@ -80,48 +72,28 @@
 ///////////////////Double layer macros/////////////////
 ////////////Just for better formatting/////////////////
 ///////////////////////////////////////////////////////
-#define a_MDA    MT(MOD_LCTL, KC_A)
-#define a_MDS    MT(MOD_LSFT, KC_S)
-#define a_MDD    MT(MOD_LSFT, KC_D)
-#define a_MDF    MT(MOD_LCTL, KC_F)
-#define a_MDJ    MT(MOD_LCTL, KC_J)
-#define a_MDK    MT(MOD_LSFT, KC_K)
-#define a_MDL    MT(MOD_LSFT, KC_L)
+#define a_MDA MT(MOD_LCTL, KC_A)
+#define a_MDS MT(MOD_LSFT, KC_S)
+#define a_MDD MT(MOD_LSFT, KC_D)
+#define a_MDF MT(MOD_LCTL, KC_F)
+#define a_MDJ MT(MOD_LCTL, KC_J)
+#define a_MDK MT(MOD_LSFT, KC_K)
+#define a_MDL MT(MOD_LSFT, KC_L)
 #define a_MDSEMI MT(MOD_LCTL, KC_SCLN)
 
-
 #define CUSTOM_TAP_LAYER_TIMEOUT 500
-#define SCROLL_MOUSE_DELAY      30
+#define SCROLL_MOUSE_DELAY 30
+#define CUSTOM_QUICK_TAP_TERM QUICK_TAP_TERM
 
 #define DELETE_TAPPING_TERM 100
 
-
-
 const keypos_t PROGMEM hand_swap_config[MATRIX_ROWS][MATRIX_COLS] = {
-  {{6, 5}, {5, 5}, {4, 5}, {3, 5}, {2, 5}, {1, 5}, {0, 5}},
-  {{6, 6}, {5, 6}, {4, 6}, {3, 6}, {2, 6}, {1, 6}, {0, 6}},
-  {{6, 7}, {5, 7}, {4, 7}, {3, 7}, {2, 7}, {1, 7}, {0, 7}},
-  {{6, 8}, {5, 8}, {4, 8}, {3, 8}, {2, 8}, {1, 8}, {0, 8}},
-  {{6, 9}, {5, 9}, {4, 9}, {3, 9}, {2, 9}, {1, 9}, {0, 9}},
-  {{6, 0}, {5, 0}, {4, 0}, {3, 0}, {2, 0}, {1, 0}, {0, 0}},
-  {{6, 1}, {5, 1}, {4, 1}, {3, 1}, {2, 1}, {1, 1}, {0, 1}},
-  {{6, 2}, {5, 2}, {4, 2}, {3, 2}, {2, 2}, {1, 2}, {0, 2}},
-  {{6, 3}, {5, 3}, {4, 3}, {3, 3}, {2, 3}, {1, 3}, {0, 3}},
-  {{6, 4}, {5, 4}, {4, 4}, {3, 4}, {2, 4}, {1, 4}, {0, 4}},
+    {{6, 5}, {5, 5}, {4, 5}, {3, 5}, {2, 5}, {1, 5}, {0, 5}}, {{6, 6}, {5, 6}, {4, 6}, {3, 6}, {2, 6}, {1, 6}, {0, 6}}, {{6, 7}, {5, 7}, {4, 7}, {3, 7}, {2, 7}, {1, 7}, {0, 7}}, {{6, 8}, {5, 8}, {4, 8}, {3, 8}, {2, 8}, {1, 8}, {0, 8}}, {{6, 9}, {5, 9}, {4, 9}, {3, 9}, {2, 9}, {1, 9}, {0, 9}}, {{6, 0}, {5, 0}, {4, 0}, {3, 0}, {2, 0}, {1, 0}, {0, 0}}, {{6, 1}, {5, 1}, {4, 1}, {3, 1}, {2, 1}, {1, 1}, {0, 1}}, {{6, 2}, {5, 2}, {4, 2}, {3, 2}, {2, 2}, {1, 2}, {0, 2}}, {{6, 3}, {5, 3}, {4, 3}, {3, 3}, {2, 3}, {1, 3}, {0, 3}}, {{6, 4}, {5, 4}, {4, 4}, {3, 4}, {2, 4}, {1, 4}, {0, 4}},
 };
-
-
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
-     [_QWERTY  ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
-     [_SINGLE  ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
-     [_SYM     ] =  { ENCODER_CCW_CW(KC_BSPC, KC_DEL),           ENCODER_CCW_CW(KC_BSPC, KC_DEL)   },
-     [_NAV     ] =  { ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN) },
-     [_NUM     ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(QK_REP, QK_REP)            },
-     [_WASD    ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
-     [_DOUBLE  ] =  { ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)            },
-     [_MOUSE   ] =  { ENCODER_CCW_CW(MS_LEFT, MS_RGHT), ENCODER_CCW_CW(MS_DOWN, MS_UP)             },
+    [_QWERTY] = {ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)}, [_SINGLE] = {ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)}, [_SYM] = {ENCODER_CCW_CW(KC_BSPC, KC_DEL), ENCODER_CCW_CW(KC_BSPC, KC_DEL)}, [_NAV] = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN)}, [_NUM] = {ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(QK_REP, QK_REP)}, [_WASD] = {ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)}, [_WASD1] = {ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)}, [_DOUBLE] = {ENCODER_CCW_CW(KC_LEFT, KC_RIGHT), ENCODER_CCW_CW(KC_DOWN, KC_UP)}, [_MOUSE] = {ENCODER_CCW_CW(MS_LEFT, MS_RGHT), ENCODER_CCW_CW(MS_DOWN, MS_UP)},
     //                  Encoder 1                                     Encoder 2
 };
 #endif
@@ -130,49 +102,119 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
 // const uint8_t PROGMEM encoder_hand_swap_config[NUM_ENCODERS] = { 1, 0 };
 // #endif
 
+typedef struct {
+    bool     is_active; // active
+    bool     is_held;   // pending, is held, but not active yet, if active, held is set to false
+    uint16_t last_time_released;
+    uint16_t timer;
+    uint8_t  mods;
+} scroll_layer_state_t;
+
+static scroll_layer_state_t vim_wb  = {0};
+static scroll_layer_state_t vim_ege = {0};
+static scroll_layer_state_t vim_g   = {0};
+static scroll_layer_state_t sc_tab  = {0};
+static scroll_layer_state_t strange = {0};
+static scroll_layer_state_t redo_y  = {0};
+static scroll_layer_state_t undo_z  = {0};
+
 bool is_scroll_layer_deactivated = false;
 
-
-bool is_rep_8_active = false;
-bool is_vim_wb_active = false;
-bool is_vim_ege_active = false;
-bool is_sc_tab_active = false;
-bool is_strange_active = false;
-bool is_redo_y_active = false;
-bool is_undo_z_active = false;
-bool is_vim_g_active = false;
-
-
-bool is_8_held = false;
-bool is_i_held = false;
-bool is_pgup_held = false;
-bool is_w_held = false;
-bool is_e_held = false;
-bool is_tab_held = false;
-bool is_u_held = false;
-bool is_y_held = false;
-bool is_z_held = false;
-bool is_g_held = false;
-
-uint16_t last_time_8_released = 0;
-uint16_t last_time_i_released = 0;
+bool     is_rep_8_active         = false;
+bool     is_8_held               = false;
+bool     is_i_held               = false;
+bool     is_pgup_held            = false;
+uint16_t last_time_8_released    = 0;
+uint16_t last_time_i_released    = 0;
 uint16_t last_time_pgup_released = 0;
-uint16_t last_time_w_released = 0;
-uint16_t last_time_e_released = 0;
-uint16_t last_time_tab_released = 0;
-uint16_t last_time_u_released = 0;
-uint16_t last_time_y_released = 0;
-uint16_t last_time_z_released = 0;
-uint16_t last_time_g_released = 0;
+uint16_t is_rep_8_timer          = 0;
+uint8_t  key_8_mods              = 0;
+uint8_t  key_i_mods              = 0;
+uint8_t  key_pgup_mods           = 0;
 
-uint16_t is_rep_8_timer = 0;
-uint16_t is_vim_wb_timer = 0;
-uint16_t is_vim_ege_timer = 0;
-uint16_t is_sc_tab_timer = 0;
-uint16_t is_strange_timer = 0;
-uint16_t is_redo_y_timer = 0;
-uint16_t is_undo_z_timer = 0;
-uint16_t is_vim_g_timer = 0;
+static inline bool process_scroll_layer(uint16_t keycode, bool *is_held, bool *is_active, uint16_t *timer, uint16_t *last_time_released, uint8_t *mods, keyrecord_t *record) {
+    if (record->event.pressed) {
+        if (!*is_active && timer_elapsed(*last_time_released) < CUSTOM_QUICK_TAP_TERM) {
+            *is_held   = false;
+            *is_active = false;
+            return true;
+        }
+        *is_held = true;
+        *timer   = timer_read();
+        *mods    = get_mods();
+    } else {
+        if (*is_held) {
+            add_weak_mods(*mods);
+            tap_code16(keycode);
+            unregister_weak_mods(*mods);
+        }
+        bool _retval = false;
+        _retval      = !(*is_held || *is_active);
+
+        *is_held            = false;
+        *is_active          = false;
+        *timer              = timer_read();
+        *last_time_released = timer_read();
+        return _retval;
+    }
+    return false;
+}
+
+static inline bool process_scroll_layer_key(uint16_t keycode, scroll_layer_state_t *layer, keyrecord_t *record) {
+    if (record->event.pressed) {
+        if (!layer->is_active && timer_elapsed(layer->last_time_released) < CUSTOM_QUICK_TAP_TERM) {
+            layer->is_held   = false;
+            layer->is_active = false;
+            return true;
+        }
+        layer->is_held = true;
+        layer->timer   = timer_read();
+        layer->mods    = get_mods();
+    } else {
+        if (layer->is_held) {
+            add_weak_mods(layer->mods);
+            tap_code16(keycode);
+            unregister_weak_mods(layer->mods);
+        }
+        bool _retval = false;
+        _retval      = !(layer->is_held || layer->is_active);
+
+        layer->is_held            = false;
+        layer->is_active          = false;
+        layer->timer              = timer_read();
+        layer->last_time_released = timer_read();
+        return _retval;
+    }
+    return false;
+}
+
+static inline void try_to_activate_layer_key(scroll_layer_state_t *layer) {
+    if (layer->is_held) {
+        if (timer_elapsed(layer->timer) > CUSTOM_TAP_LAYER_TIMEOUT) {
+            layer->is_active = true;
+            layer->is_held   = false;
+            layer->timer     = timer_read();
+        }
+    }
+}
+
+static inline void activate_scroll_layer(scroll_layer_state_t *layer) {
+    if (layer->is_held) {
+        layer->is_active = true;
+        layer->is_held   = false;
+        layer->timer     = timer_read();
+    }
+}
+
+static inline void activate_layer_key(bool *is_held, bool *is_active, uint16_t *timer) {
+    if (*is_held) {
+        *is_active = true;
+        *is_held   = false;
+        *timer     = timer_read();
+    }
+}
+
+// clang-format off
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_QWERTY] = LAYOUT_split_70(
@@ -213,6 +255,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
             KC_TRNS, KC_TRNS, KC_LGUI, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,                   KC_ENT,  KC_TRNS, KC_1,    KC_2,    KC_3,    KC_DOT,  KC_TRNS, KC_TRNS,
                      KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_RSFT, KC_0,    KC_TRNS, KC_0,    KC_DOT,  KC_SLSH, KC_TRNS
     ),
+    [_WASD1] = LAYOUT_split_70(
+                               KC_1,   KC_2,  KC_3,    KC_4,    KC_5,                                           KC_6,    KC_7,     KC_8,     KC_9,     DF(_QWERTY),
+            KC_ESC,  KC_TAB,   KC_Q,   KC_W,  KC_E,    KC_R,    KC_T,                                           KC_Y,    KC_U,     KC_I,     KC_O,     KC_0,      KC_MINS,   KC_EQL,
+            KC_GRV,  KC_LSFT,  KC_A,   KC_S,  KC_D,    KC_F,    KC_G,                                           KC_H,    KC_J,     KC_K,     KC_L,     KC_P,      KC_LBRC,   KC_RBRC,
+            KC_LCTL, KC_LSFT,  KC_Z,   KC_X,  KC_C,    KC_V,    KC_B, KC_ENTER,                         KC_ENTER,  KC_N,    KC_M,     KC_COMM,  KC_DOT,   KC_SCLN,   KC_QUOT,   KC_BSLS,
+                     KC_LSFT,  KC_NO,  KC_NO, KC_NO, KC_LCTL, KC_SPC, KC_LALT,   KC_ESC,   KC_TAB, KC_LSFT,    KC_SPC, KC_RCTL,  RMTD,  RMTU,  KC_SLSH,  KC_RSFT
+
+    ),
     [_WASD] = LAYOUT_split_70(
                                KC_1,   KC_2,  KC_3,    KC_4,    KC_5,                                           KC_6,    KC_7,     KC_8,     KC_9,     DF(_QWERTY),
             KC_ESC,  KC_TAB,   KC_Q,   KC_W,  KC_E,    KC_R,    KC_T,                                           KC_Y,    KC_U,     KC_I,     KC_O,     KC_0,      KC_MINS,   KC_EQL,
@@ -222,10 +272,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     ),
     [_DOUBLE] = LAYOUT_split_70(
-                          KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-            KC_NO, KC_NO, KC_NO,        DF(_WASD),   KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-            KC_NO, KC_NO, DF(_QWERTY),  DF(_SINGLE), KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-            KC_NO, KC_NO, KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO, KC_NO,               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
+                          KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO,                             KC_NO, QK_USER_3, KC_NO, KC_NO, KC_NO,
+            KC_NO, KC_NO, KC_NO,        DF(_WASD),   KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_4, KC_NO,
+            KC_NO, KC_NO, DF(_QWERTY),  DF(_SINGLE), KC_NO, KC_NO, DF(_WASD1),                        KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_2, KC_NO, KC_NO,
+            KC_NO, KC_NO, KC_NO,        KC_NO,       QK_USER_0, QK_USER_1, KC_NO, KC_NO,               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
                    KC_NO, KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO
 
     ),
@@ -248,10 +298,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 };
 
+// clang-format on
+
 void tap_8_times_or_once_delay(uint16_t keycode, uint16_t delay) {
     if (is_rep_8_active) {
-        tap_code16_delay(keycode, delay); tap_code16_delay(keycode, delay); tap_code16_delay(keycode, delay); tap_code16_delay(keycode, delay);
-        tap_code16_delay(keycode, delay); tap_code16_delay(keycode, delay); tap_code16_delay(keycode, delay); tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
+        tap_code16_delay(keycode, delay);
     } else {
         tap_code16_delay(keycode, delay);
     }
@@ -259,50 +317,54 @@ void tap_8_times_or_once_delay(uint16_t keycode, uint16_t delay) {
 
 void tap_8_times_or_once(uint16_t keycode) {
     if (is_rep_8_active) {
-        tap_code16(keycode); tap_code16(keycode); tap_code16(keycode); tap_code16(keycode);
-        tap_code16(keycode); tap_code16(keycode); tap_code16(keycode); tap_code16(keycode);
+        tap_code16(keycode);
+        tap_code16(keycode);
+        tap_code16(keycode);
+        tap_code16(keycode);
+        tap_code16(keycode);
+        tap_code16(keycode);
+        tap_code16(keycode);
+        tap_code16(keycode);
     } else {
         tap_code16(keycode);
     }
 }
 
-
 bool encoder_update_user(uint8_t index, bool clockwise) {
-    ACTIVATE_LAYER_KEY(is_8_held, is_rep_8_active, is_rep_8_timer);
-    ACTIVATE_LAYER_KEY(is_i_held, is_rep_8_active, is_rep_8_timer);
-    ACTIVATE_LAYER_KEY(is_pgup_held, is_rep_8_active, is_rep_8_timer);
-    ACTIVATE_LAYER_KEY(is_g_held, is_vim_g_active, is_vim_g_timer);
-    ACTIVATE_LAYER_KEY(is_w_held, is_vim_wb_active, is_vim_wb_timer);
-    ACTIVATE_LAYER_KEY(is_e_held, is_vim_ege_active, is_vim_ege_timer);
-    ACTIVATE_LAYER_KEY(is_tab_held, is_sc_tab_active, is_sc_tab_timer);
-    ACTIVATE_LAYER_KEY(is_u_held, is_strange_active, is_strange_timer);
-    ACTIVATE_LAYER_KEY(is_y_held, is_redo_y_active, is_redo_y_timer);
-    ACTIVATE_LAYER_KEY(is_z_held, is_undo_z_active, is_undo_z_timer);
-
-
+    activate_layer_key(&is_8_held, &is_rep_8_active, &is_rep_8_timer);
+    activate_layer_key(&is_i_held, &is_rep_8_active, &is_rep_8_timer);
+    activate_layer_key(&is_pgup_held, &is_rep_8_active, &is_rep_8_timer);
+    activate_scroll_layer(&vim_g);
+    activate_scroll_layer(&vim_wb);
+    activate_scroll_layer(&vim_ege);
+    activate_scroll_layer(&sc_tab);
+    activate_scroll_layer(&strange);
+    activate_scroll_layer(&redo_y);
+    activate_scroll_layer(&undo_z);
 
     if (index == 0) { /* First encoder */
         if (!clockwise) {
-            if(is_strange_active){
+            if (strange.is_active) {
                 tap_8_times_or_once(KC_U);
-            }else if (is_vim_wb_active) {
+            } else if (vim_wb.is_active) {
                 tap_8_times_or_once(KC_B);
-            } else if (is_vim_ege_active) {
-                if (is_rep_8_active){
-                    tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E);
-                    tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E); tap_code(KC_G);tap_code(KC_E);
+            } else if (vim_ege.is_active) {
+                if (is_rep_8_active) {
+                    for (int _i = 0; _i < 8; _i++) {
+                        tap_code(KC_G);
+                        tap_code(KC_E);
+                    }
+                } else {
+                    tap_code(KC_G);
+                    tap_code(KC_E);
                 }
-                else{
-                    tap_code(KC_G);tap_code(KC_E);
-                }
-            } else if (is_sc_tab_active) {
+            } else if (sc_tab.is_active) {
                 tap_8_times_or_once(S(KC_TAB));
-            } else if (is_redo_y_active) {
+            } else if (redo_y.is_active) {
                 tap_8_times_or_once(C(KC_Z));
-            } else if (is_undo_z_active) {
+            } else if (undo_z.is_active) {
                 tap_8_times_or_once(C(KC_Z));
-            }
-            else{
+            } else {
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
                         tap_8_times_or_once(KC_BSPC);
@@ -319,20 +381,19 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                 }
             }
         } else {
-            if(is_strange_active){
+            if (strange.is_active) {
                 tap_8_times_or_once(C(KC_R));
-            }else if (is_vim_wb_active) {
+            } else if (vim_wb.is_active) {
                 tap_8_times_or_once(KC_W);
-            } else if (is_vim_ege_active) {
+            } else if (vim_ege.is_active) {
                 tap_8_times_or_once(KC_E);
-            } else if (is_sc_tab_active) {
+            } else if (sc_tab.is_active) {
                 tap_8_times_or_once(KC_TAB);
-            } else if (is_redo_y_active) {
+            } else if (redo_y.is_active) {
                 tap_8_times_or_once(C(KC_Y));
-            } else if (is_undo_z_active) {
+            } else if (undo_z.is_active) {
                 tap_8_times_or_once(S(C(KC_Z)));
-            }
-            else{
+            } else {
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
                         tap_8_times_or_once(KC_DEL);
@@ -346,36 +407,34 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                     default:
                         tap_8_times_or_once(KC_RIGHT);
                         break;
-
                 }
             }
-
         }
     } else if (index == 1) { /* Second encoder */
         if (!clockwise) {
-            if(is_strange_active){
+            if (strange.is_active) {
                 tap_8_times_or_once(C(KC_R));
-            }else if (is_vim_wb_active) {
-                tap_8_times_or_once(KC_RCBR);
-            } else if (is_vim_ege_active) {
+            } else if (vim_wb.is_active) {
+                tap_8_times_or_once_delay(KC_RCBR, 10);
+            } else if (vim_ege.is_active) {
                 tap_8_times_or_once(KC_DOWN);
-            } else if (is_sc_tab_active) {
+            } else if (sc_tab.is_active) {
                 tap_8_times_or_once(S(KC_TAB));
-            }else if (is_redo_y_active) {
+            } else if (redo_y.is_active) {
                 tap_8_times_or_once(C(KC_Z));
-            } else if (is_undo_z_active) {
+            } else if (undo_z.is_active) {
                 tap_8_times_or_once(C(KC_Z));
-            }else if (is_vim_g_active) {
-                if (is_rep_8_active){
-                    tap_code(KC_G); tap_code(KC_DOWN); tap_code(KC_G); tap_code(KC_DOWN); tap_code(KC_G); tap_code(KC_DOWN); tap_code(KC_G); tap_code(KC_DOWN);
-                    tap_code(KC_G); tap_code(KC_DOWN); tap_code(KC_G); tap_code(KC_DOWN); tap_code(KC_G); tap_code(KC_DOWN); tap_code(KC_G); tap_code(KC_DOWN);
-                } else{
-                    tap_code(KC_G); tap_code(KC_DOWN);
+            } else if (vim_g.is_active) {
+                if (is_rep_8_active) {
+                    for (int _i = 0; _i < 8; _i++) {
+                        tap_code(KC_G);
+                        tap_code(KC_DOWN);
+                    }
+                } else {
+                    tap_code(KC_G);
+                    tap_code(KC_DOWN);
                 }
-
-            } else{
-
-
+            } else {
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
                         tap_8_times_or_once(KC_BSPC);
@@ -394,31 +453,33 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                     default:
                         tap_8_times_or_once(KC_DOWN);
                         break;
-
                 }
             }
 
         } else {
-            if(is_strange_active){
+            if (strange.is_active) {
                 tap_8_times_or_once(KC_U);
-            }else if (is_vim_wb_active) {
+            } else if (vim_wb.is_active) {
                 tap_8_times_or_once(S(KC_LBRC));
-            } else if (is_vim_ege_active) {
+            } else if (vim_ege.is_active) {
                 tap_8_times_or_once(KC_UP);
-            } else if (is_sc_tab_active) {
+            } else if (sc_tab.is_active) {
                 tap_8_times_or_once(KC_TAB);
-            } else if (is_redo_y_active) {
+            } else if (redo_y.is_active) {
                 tap_8_times_or_once(C(KC_Y));
-            } else if (is_undo_z_active) {
+            } else if (undo_z.is_active) {
                 tap_8_times_or_once(C(S(KC_Z)));
-            } else if (is_vim_g_active) {
-                if (is_rep_8_active){
-                    tap_code(KC_G); tap_code(KC_UP); tap_code(KC_G); tap_code(KC_UP); tap_code(KC_G); tap_code(KC_UP); tap_code(KC_G); tap_code(KC_UP);
-                    tap_code(KC_G); tap_code(KC_UP); tap_code(KC_G); tap_code(KC_UP); tap_code(KC_G); tap_code(KC_UP); tap_code(KC_G); tap_code(KC_UP);
-                }else{
-                    tap_code(KC_G); tap_code(KC_UP);
+            } else if (vim_g.is_active) {
+                if (is_rep_8_active) {
+                    for (int _i = 0; _i < 8; _i++) {
+                        tap_code(KC_G);
+                        tap_code(KC_UP);
+                    }
+                } else {
+                    tap_code(KC_G);
+                    tap_code(KC_UP);
                 }
-            } else{
+            } else {
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
                         tap_8_times_or_once(KC_DEL);
@@ -437,101 +498,94 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                     default:
                         tap_8_times_or_once(KC_UP);
                         break;
-
                 }
             }
-
         }
     }
     return false;
 }
 
-
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (is_scroll_layer_deactivated) {
-        switch (keycode){
+        switch (keycode) {
             case (uint16_t)DF(_QWERTY):
                 break;
             default:
                 return true;
         }
     }
-  switch (keycode) {
-      PROCESS_SCROLL_LAYER(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer);
-      PROCESS_SCROLL_LAYER(KC_PGUP, is_pgup_held, is_rep_8_active, is_rep_8_timer);
-      PROCESS_SCROLL_LAYER(KC_I, is_i_held, is_rep_8_active, is_rep_8_timer);
-      PROCESS_SCROLL_LAYER(KC_G, is_g_held, is_vim_g_active, is_vim_g_timer);
-      PROCESS_SCROLL_LAYER(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer);
-      PROCESS_SCROLL_LAYER(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer);
-      PROCESS_SCROLL_LAYER(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer);
-      PROCESS_SCROLL_LAYER(KC_U, is_u_held, is_strange_active, is_strange_timer);
-      PROCESS_SCROLL_LAYER(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer)
-      // PROCESS_SCROLL_LAYER(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer)
+    switch (keycode) {
+        case KC_8:
+            return process_scroll_layer(KC_8, &is_8_held, &is_rep_8_active, &is_rep_8_timer, &last_time_8_released, &key_8_mods, record);
+        case KC_I:
+            return process_scroll_layer(KC_I, &is_i_held, &is_rep_8_active, &is_rep_8_timer, &last_time_i_released, &key_i_mods, record);
+        case KC_PGUP:
+            return process_scroll_layer(KC_PGUP, &is_pgup_held, &is_rep_8_active, &is_rep_8_timer, &last_time_pgup_released, &key_pgup_mods, record);
+        case KC_G:
+            return process_scroll_layer_key(KC_G, &vim_g, record);
+        case KC_W:
+            return process_scroll_layer_key(KC_W, &vim_wb, record);
+        case KC_E:
+            return process_scroll_layer_key(KC_E, &vim_ege, record);
+        case KC_TAB:
+            return process_scroll_layer_key(KC_TAB, &sc_tab, record);
+        case KC_U:
+            return process_scroll_layer_key(KC_U, &strange, record);
+        case KC_Y:
+            return process_scroll_layer_key(KC_Y, &redo_y, record);
+        case KC_Z:
+            return process_scroll_layer_key(KC_Z, &undo_z, record);
 
-      case KC_Z:
-          if (record->event.pressed) {
-              is_z_held       = 1;
-              is_undo_z_timer = timer_read();
-          } else {
-              if (is_z_held) {
-                  tap_code(KC_Z);
-              }
-              is_z_held        = 0;
-              is_undo_z_active = 0;
-              is_undo_z_timer  = timer_read();
-          }
-          return 0;
-      case (uint16_t)DF(_QWERTY):
-        if (!record->event.pressed) {
-          is_scroll_layer_deactivated = false;
-        }
-        break;
-      case (uint16_t)DF(_WASD):
-          if (!record->event.pressed) {
-            is_scroll_layer_deactivated = true;
+        case (uint16_t)DF(_QWERTY):
+            if (!record->event.pressed) {
+                is_scroll_layer_deactivated = false;
+            }
+            break;
+        case (uint16_t)DF(_WASD):
+        case (uint16_t)DF(_WASD1):
 
-              is_scroll_layer_deactivated = true;
-              is_rep_8_active = false;
-              is_vim_wb_active = false;
-              is_vim_ege_active = false;
-              is_sc_tab_active = false;
-              is_strange_active = false;
-              is_redo_y_active = false;
-              is_undo_z_active = false;
-              is_vim_g_active = false;
+            if (!record->event.pressed) {
+                is_scroll_layer_deactivated = true;
+                is_scroll_layer_deactivated = true;
+                is_rep_8_active             = false;
+                is_8_held                   = false;
+                is_i_held                   = false;
+                is_pgup_held                = false;
+                vim_wb.is_active            = false;
+                vim_wb.is_held              = false;
+                vim_ege.is_active           = false;
+                vim_ege.is_held             = false;
+                vim_g.is_active             = false;
+                vim_g.is_held               = false;
+                sc_tab.is_active            = false;
+                sc_tab.is_held              = false;
+                strange.is_active           = false;
+                strange.is_held             = false;
+                redo_y.is_active            = false;
+                redo_y.is_held              = false;
+                undo_z.is_active            = false;
+                undo_z.is_held              = false;
+            }
+            break;
 
-              is_8_held = false;
-              is_i_held = false;
-              is_pgup_held = false;
-              is_w_held = false;
-              is_e_held = false;
-              is_tab_held = false;
-              is_u_held = false;
-              is_y_held = false;
-              is_z_held = false;
-              is_g_held = false;
-         }
-          break;
+        default:
+            CHECK_AND_TAP__(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer, keycode);
+            CHECK_AND_TAP__(KC_I, is_i_held, is_rep_8_active, is_rep_8_timer, keycode);
+            CHECK_AND_TAP__(KC_PGUP, is_pgup_held, is_rep_8_active, is_rep_8_timer, keycode);
+            CHECK_AND_TAP(KC_W, vim_wb, keycode);
+            CHECK_AND_TAP(KC_G, vim_g, keycode);
+            CHECK_AND_TAP(KC_E, vim_ege, keycode);
+            CHECK_AND_TAP(KC_TAB, sc_tab, keycode);
+            CHECK_AND_TAP(KC_U, strange, keycode);
+            CHECK_AND_TAP(KC_Y, redo_y, keycode);
+            CHECK_AND_TAP(KC_Z, undo_z, keycode);
 
-    default:
-      CHECK_AND_TAP(KC_8, is_8_held, is_rep_8_active, is_rep_8_timer);
-      CHECK_AND_TAP(KC_I, is_i_held, is_rep_8_active, is_rep_8_timer);
-      CHECK_AND_TAP(KC_PGUP, is_pgup_held, is_rep_8_active, is_rep_8_timer);
-      CHECK_AND_TAP(KC_W, is_w_held, is_vim_wb_active, is_vim_wb_timer);
-      CHECK_AND_TAP(KC_G, is_g_held, is_vim_g_active, is_vim_g_timer);
-      CHECK_AND_TAP(KC_E, is_e_held, is_vim_ege_active, is_vim_ege_timer);
-      CHECK_AND_TAP(KC_TAB, is_tab_held, is_sc_tab_active, is_sc_tab_timer);
-      CHECK_AND_TAP(KC_U, is_u_held, is_strange_active, is_strange_timer);
-      CHECK_AND_TAP(KC_Y, is_y_held, is_redo_y_active, is_redo_y_timer);
-      CHECK_AND_TAP(KC_Z, is_z_held, is_undo_z_active, is_undo_z_timer);
-      return true; // Process all other keycodes normally
-  }
-  return true;
+            return true; // Process all other keycodes normally
+    }
+    return true;
 }
 
-
-void matrix_scan_user(void){
+void matrix_scan_user(void) {
     if (is_scroll_layer_deactivated) {
         return;
     }
@@ -539,14 +593,13 @@ void matrix_scan_user(void){
     TRY_TO_ACTIVATE_LAYER_KEY(is_8_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
     TRY_TO_ACTIVATE_LAYER_KEY(is_i_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
     TRY_TO_ACTIVATE_LAYER_KEY(is_pgup_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_w_held, is_vim_wb_timer, is_vim_wb_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_g_held, is_vim_g_timer, is_vim_g_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_e_held, is_vim_ege_timer, is_vim_ege_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_tab_held, is_sc_tab_timer, is_sc_tab_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_u_held, is_strange_timer, is_strange_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_y_held, is_redo_y_timer, is_redo_y_active, CUSTOM_TAP_LAYER_TIMEOUT);
-    TRY_TO_ACTIVATE_LAYER_KEY(is_z_held, is_undo_z_timer, is_undo_z_active, CUSTOM_TAP_LAYER_TIMEOUT);
-
+    try_to_activate_layer_key(&vim_wb);
+    try_to_activate_layer_key(&vim_g);
+    try_to_activate_layer_key(&vim_ege);
+    try_to_activate_layer_key(&sc_tab);
+    try_to_activate_layer_key(&strange);
+    try_to_activate_layer_key(&redo_y);
+    try_to_activate_layer_key(&undo_z);
 }
 
 uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
@@ -558,62 +611,43 @@ uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
-
 uint16_t get_alt_repeat_key_keycode_user(uint16_t keycode, uint8_t mods) {
     if ((mods & MOD_MASK_CTRL)) {
         switch (keycode) {
-            case KC_O: return C(KC_I);  // Vim jump list
-            case KC_I: return C(KC_O);
-            case KC_A: return C(KC_X);  // Vim increase/decrease number
-            case KC_X: return C(KC_A);
+            case KC_O:
+                return C(KC_I); // Vim jump list
+            case KC_I:
+                return C(KC_O);
+            case KC_A:
+                return C(KC_X); // Vim increase/decrease number
+            case KC_X:
+                return C(KC_A);
         }
-    }else if ((mods & MOD_MASK_SHIFT)) {
+    } else if ((mods & MOD_MASK_SHIFT)) {
         switch (keycode) {
-            case KC_N: return KC_N;     // Vim search
+            case KC_N:
+                return KC_N; // Vim search
+        }
+    } else if (mods == 0x00) {
+        switch (keycode) {
+            case KC_SCLN:
+                return KC_COMM;
+            case KC_COMM:
+                return KC_SCLN;
+            case KC_N:
+                return S(KC_N);
         }
     }
-    else if (mods == 0x00) {
-        switch (keycode) {
-            case KC_SCLN: return KC_COMM;
-            case KC_COMM: return KC_SCLN;
-            case KC_N: return S(KC_N);
 
-        }
-    }
-
-    return KC_TRNS;  // Defer to default definitions.
+    return KC_TRNS; // Defer to default definitions.
 }
 
-
-// layer_state_t layer_state_set_user(layer_state_t state) {
-// // This does not work
-//     switch (get_highest_layer(state)) {
-//         case _WASD:
-//             is_scroll_layer_deactivated = true;
-//             is_rep_8_active = false;
-//             is_vim_wb_active = false;
-//             is_vim_ege_active = false;
-//             is_sc_tab_active = false;
-//             is_strange_active = false;
-//             is_redo_y_active = false;
-//             is_undo_z_active = false;
-//             is_vim_g_active = false;
-//
-//
-//             is_8_held = false;
-//             is_i_held = false;
-//             is_pgup_held = false;
-//             is_w_held = false;
-//             is_e_held = false;
-//             is_tab_held = false;
-//             is_u_held = false;
-//             is_y_held = false;
-//             is_z_held = false;
-//             is_g_held = false;
-//         break;
-//         case _QWERTY:
-//             is_scroll_layer_deactivated = false;
-//         break;
-//     }
-//   return state;
-// }
+bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case LT(_NUM, KC_SPC):
+        case LT(_MOUSE, KC_V):
+            return false;
+        default:
+            return true;
+    }
+}
