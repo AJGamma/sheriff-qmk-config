@@ -66,7 +66,7 @@
 #define LMTL MT(MOD_LCTL, KC_LEFT)
 #define LMTR MT(MOD_LGUI, KC_RIGHT)
 #define RMTD MT(MOD_RGUI, KC_DOWN)
-#define RMTU MT(MOD_RCTL, KC_UP)
+#define RMTU MT(MOD_RALT, KC_UP)
 
 ///////////////////////////////////////////////////////
 ///////////////////Double layer macros/////////////////
