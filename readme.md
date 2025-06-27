@@ -11,7 +11,7 @@
 ```bash
 # for example, in MacOS or Linux:
 cd ~/qmk_firmware/keyboards
-git clone https://github.com/AJGamma/sheriff-qmk-config
+git clone https://github.com/AJGamma/sheriff-qmk-config sheriff
 ```
 3. Compile and flash:
 ```bash
@@ -21,6 +21,9 @@ qmk flash -kb sheriff -km custom_scroll_layers
 qmk flash -kb sheriff -km default
 ```
 use `qmk config user.keyboard=sheriff user.keymap=custom_scroll_layers` to set default parameters, and then you can use `qmk compile` and `qmk flash` without specifying the keyboard and keymap.
+
+4. Generate compilation database with `qmk generate-compilation-database`
+
 
 
 ## Branches
