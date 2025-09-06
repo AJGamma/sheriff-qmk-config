@@ -112,7 +112,7 @@ typedef struct {
 
 static scroll_layer_state_t vim_wb  = {0};
 static scroll_layer_state_t vim_ege = {0};
-static scroll_layer_state_t vim_g   = {0};
+// static scroll_layer_state_t vim_g   = {0};
 static scroll_layer_state_t sc_tab  = {0};
 static scroll_layer_state_t strange = {0};
 static scroll_layer_state_t redo_y  = {0};
@@ -334,7 +334,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
     activate_layer_key(&is_8_held, &is_rep_8_active, &is_rep_8_timer);
     activate_layer_key(&is_i_held, &is_rep_8_active, &is_rep_8_timer);
     activate_layer_key(&is_pgup_held, &is_rep_8_active, &is_rep_8_timer);
-    activate_scroll_layer(&vim_g);
+    // activate_scroll_layer(&vim_g);
     activate_scroll_layer(&vim_wb);
     activate_scroll_layer(&vim_ege);
     activate_scroll_layer(&sc_tab);
@@ -424,16 +424,16 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                 tap_8_times_or_once(C(KC_Z));
             } else if (undo_z.is_active) {
                 tap_8_times_or_once(C(KC_Z));
-            } else if (vim_g.is_active) {
-                if (is_rep_8_active) {
-                    for (int _i = 0; _i < 8; _i++) {
-                        tap_code(KC_G);
-                        tap_code(KC_DOWN);
-                    }
-                } else {
-                    tap_code(KC_G);
-                    tap_code(KC_DOWN);
-                }
+            // } else if (vim_g.is_active) {
+            //     if (is_rep_8_active) {
+            //         for (int _i = 0; _i < 8; _i++) {
+            //             tap_code(KC_G);
+            //             tap_code(KC_DOWN);
+            //         }
+            //     } else {
+            //         tap_code(KC_G);
+            //         tap_code(KC_DOWN);
+            //     }
             } else {
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
@@ -469,16 +469,16 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
                 tap_8_times_or_once(C(KC_Y));
             } else if (undo_z.is_active) {
                 tap_8_times_or_once(C(S(KC_Z)));
-            } else if (vim_g.is_active) {
-                if (is_rep_8_active) {
-                    for (int _i = 0; _i < 8; _i++) {
-                        tap_code(KC_G);
-                        tap_code(KC_UP);
-                    }
-                } else {
-                    tap_code(KC_G);
-                    tap_code(KC_UP);
-                }
+            // } else if (vim_g.is_active) {
+            //     if (is_rep_8_active) {
+            //         for (int _i = 0; _i < 8; _i++) {
+            //             tap_code(KC_G);
+            //             tap_code(KC_UP);
+            //         }
+            //     } else {
+            //         tap_code(KC_G);
+            //         tap_code(KC_UP);
+            //     }
             } else {
                 switch (get_highest_layer(layer_state)) {
                     case _SYM:
@@ -521,8 +521,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return process_scroll_layer(KC_I, &is_i_held, &is_rep_8_active, &is_rep_8_timer, &last_time_i_released, &key_i_mods, record);
         case KC_PGUP:
             return process_scroll_layer(KC_PGUP, &is_pgup_held, &is_rep_8_active, &is_rep_8_timer, &last_time_pgup_released, &key_pgup_mods, record);
-        case KC_G:
-            return process_scroll_layer_key(KC_G, &vim_g, record);
+        // case KC_G:
+            // return process_scroll_layer_key(KC_G, &vim_g, record);
         case KC_W:
             return process_scroll_layer_key(KC_W, &vim_wb, record);
         case KC_E:
@@ -555,8 +555,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 vim_wb.is_held              = false;
                 vim_ege.is_active           = false;
                 vim_ege.is_held             = false;
-                vim_g.is_active             = false;
-                vim_g.is_held               = false;
+                // vim_g.is_active             = false;
+                // vim_g.is_held               = false;
                 sc_tab.is_active            = false;
                 sc_tab.is_held              = false;
                 strange.is_active           = false;
@@ -605,7 +605,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             CHECK_AND_TAP__(KC_I, is_i_held, is_rep_8_active, is_rep_8_timer, keycode);
             CHECK_AND_TAP__(KC_PGUP, is_pgup_held, is_rep_8_active, is_rep_8_timer, keycode);
             CHECK_AND_TAP(KC_W, vim_wb, keycode);
-            CHECK_AND_TAP(KC_G, vim_g, keycode);
+            // CHECK_AND_TAP(KC_G, vim_g, keycode);
             CHECK_AND_TAP(KC_E, vim_ege, keycode);
             CHECK_AND_TAP(KC_TAB, sc_tab, keycode);
             CHECK_AND_TAP(KC_U, strange, keycode);
@@ -626,7 +626,7 @@ void matrix_scan_user(void) {
     TRY_TO_ACTIVATE_LAYER_KEY(is_i_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
     TRY_TO_ACTIVATE_LAYER_KEY(is_pgup_held, is_rep_8_timer, is_rep_8_active, CUSTOM_TAP_LAYER_TIMEOUT);
     try_to_activate_layer_key(&vim_wb);
-    try_to_activate_layer_key(&vim_g);
+    // try_to_activate_layer_key(&vim_g);
     try_to_activate_layer_key(&vim_ege);
     try_to_activate_layer_key(&sc_tab);
     try_to_activate_layer_key(&strange);
