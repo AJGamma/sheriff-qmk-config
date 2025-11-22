@@ -44,14 +44,14 @@
 ///////////////////Double layer macros/////////////////
 ////////////Just for better formatting/////////////////
 ///////////////////////////////////////////////////////
-#define a_MDA MT(MOD_LCTL, KC_A)
-#define a_MDS MT(MOD_LSFT, KC_S)
-#define a_MDD MT(MOD_LSFT, KC_D)
-#define a_MDF MT(MOD_LCTL, KC_F)
-#define a_MDJ MT(MOD_LCTL, KC_J)
-#define a_MDK MT(MOD_LSFT, KC_K)
-#define a_MDL MT(MOD_LSFT, KC_L)
-#define a_MDSEMI MT(MOD_LCTL, KC_SCLN)
+#define a_MDA MT(MOD_LSFT, KC_A)
+#define a_MDS MT(MOD_LCTL, KC_S)
+#define a_MDD MT(MOD_LCTL, KC_D)
+#define a_MDF MT(MOD_LSFT, KC_F)
+#define a_MDJ MT(MOD_LSFT, KC_J)
+#define a_MDK MT(MOD_LCTL, KC_K)
+#define a_MDL MT(MOD_LCTL, KC_L)
+#define a_MDSEMI MT(MOD_LSFT, KC_SCLN)
 
 #define CUSTOM_TAP_LAYER_TIMEOUT 500
 #define SCROLL_MOUSE_DELAY 30
@@ -157,7 +157,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                               _______, _______, _______, _______, _______,                                     _______, _______, _______, _______, _______,
             _______, _______, _______, _______, KC_EQL,  KC_PLUS, _______,                                     KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_END,  KC_F11,  KC_F12,
             _______, _______, _______, KC_LALT, KC_LCTL, KC_LSFT, _______,                                     KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT, KC_MPRV, _______, _______,
-            _______, _______, KC_LGUI, _______, KC_UNDS, KC_MINS, _______, _______,                   _______, _______, KC_MUTE, KC_VOLD, KC_VOLU, KC_MPLY, _______, _______,
+        MO(_DOUBLE), _______, KC_LGUI, _______, KC_UNDS, KC_MINS, _______, _______,                   _______, _______, KC_MUTE, KC_VOLD, KC_VOLU, KC_MPLY, _______, _______,
                      _______, _______, _______, _______, _______, _______, _______, _______, KC_ESC,  _______, _______, _______, KC_BRID, KC_BRIU, KC_MNXT, _______
     ),
     [_NUM] = LAYOUT_split_70(
@@ -185,7 +185,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
     [_DOUBLE] = LAYOUT_split_70(
                           KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO,                             KC_NO, QK_USER_4, KC_NO, KC_NO, KC_NO,
-            KC_NO, KC_NO, KC_NO,        DF(_WASD),   KC_NO, KC_NO, KC_NO,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_5, KC_NO,
+            KC_NO, KC_NO, KC_NO,        DF(_WASD),   KC_NO, KC_NO, QK_USER_6,                             KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_5, KC_NO,
             KC_NO, KC_NO, DF(_QWERTY),  DF(_SINGLE), KC_NO, KC_NO, DF(_WASD1),                        KC_NO, KC_NO, KC_NO, KC_NO, QK_USER_3, KC_NO, KC_NO,
             KC_NO, KC_NO, KC_NO,        KC_NO,       QK_USER_1, QK_USER_2, KC_NO, KC_NO,               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
                    KC_NO, KC_NO,        KC_NO,       KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO
@@ -453,11 +453,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 switch (current_repetition_layer_state) {
                     case 0:
+                        repetition_layer_mods = get_mods();
                         if (current_repetition_layer == keycode && timer_elapsed(last_time_repetition_layer_released) < CUSTOM_QUICK_TAP_TERM) {
+                            if (keycode == KC_8) {
+                                register_code16(KC_8);
+                            }
                             goto default_case;
                         }
                         repetition_layer_held_timer    = timer_read();
-                        repetition_layer_mods          = get_mods();
                         current_repetition_layer_state = 1;
                         current_repetition_layer       = keycode;
                         return false;
@@ -468,6 +471,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         register_code16(current_repetition_layer);
                         unregister_weak_mods(repetition_layer_mods);
                         current_repetition_layer = keycode;
+                        if (keycode == KC_8) {
+                            register_code16(KC_8);
+                            return false;
+                        }
                         return true;
                     default:
                         current_repetition_layer = keycode;
@@ -476,6 +483,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             } else {
                 switch (current_repetition_layer_state) {
                     case 0:
+                        // if keycode is 8, tap 8 and return false
+                        if (keycode == KC_8) {
+                            unregister_code16(KC_8);
+                            set_last_keycode(KC_8);
+                            return false;
+                        }
                         return true;
                     case 1:
                         if (keycode == current_repetition_layer) {
@@ -604,6 +617,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
+        case QK_USER_6:
+            if (record->event.pressed) {
+            } else {
+                SEND_PASSWD(PASSWD6);
+            }
+            return false;
+
         default:
         default_case:
             if (record->event.pressed) {
@@ -682,6 +702,10 @@ uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
 uint16_t get_alt_repeat_key_keycode_user(uint16_t keycode, uint8_t mods) {
     if ((mods & MOD_MASK_CTRL)) {
         switch (keycode) {
+            case KC_E:
+                return C(KC_Y); // Vim scroll
+            case KC_Y:
+                return C(KC_E);
             case KC_O:
                 return C(KC_I); // Vim jump list
             case KC_I:
@@ -695,6 +719,8 @@ uint16_t get_alt_repeat_key_keycode_user(uint16_t keycode, uint8_t mods) {
         switch (keycode) {
             case KC_N:
                 return KC_N; // Vim search
+            case KC_TAB:
+                return KC_TAB; // Tab and reverse tab
         }
     } else if (mods == 0x00) {
         switch (keycode) {
@@ -704,6 +730,8 @@ uint16_t get_alt_repeat_key_keycode_user(uint16_t keycode, uint8_t mods) {
                 return KC_SCLN;
             case KC_N:
                 return S(KC_N);
+            case KC_TAB:
+                return S(KC_TAB);
         }
     }
 
@@ -720,8 +748,7 @@ bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
-bool remember_last_key_user(uint16_t keycode, keyrecord_t* record,
-                            uint8_t* remembered_mods) {
+bool remember_last_key_user(uint16_t keycode, keyrecord_t *record, uint8_t *remembered_mods) {
     switch (keycode) {
         case QK_USER_0:
             return false;
